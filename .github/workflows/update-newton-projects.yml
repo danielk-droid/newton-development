@@ -14,22 +14,23 @@ jobs:
 
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
-          node-version: 20
+          node-version: 24
           cache: npm
 
       - name: Install dependencies
-        run: npm ci
+        run: npm install
 
       - name: Update Newton projects
         run: node scripts/update-newton-projects.mjs
 
       - name: Check for changes
         id: changes
+        shell: bash
         run: |
           if git diff --quiet -- data/newton-source.json; then
             echo "changed=false" >> "$GITHUB_OUTPUT"
