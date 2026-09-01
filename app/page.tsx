@@ -151,9 +151,12 @@ export default function Home() {
                 {project.address}
               </p>
 
-              <button className="mt-6 text-sm font-semibold underline underline-offset-4">
-                View project
-              </button>
+             <a
+  href={`/projects/${project.id}`}
+  className="mt-6 inline-block text-sm font-semibold underline underline-offset-4"
+>
+  View project
+</a>
             </article>
           ))}
         </div>
