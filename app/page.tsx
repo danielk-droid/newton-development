@@ -1,24 +1,4 @@
-const projects = [
-  {
-    name: "Example Development Project",
-    location: "Newton, Massachusetts",
-    status: "Under Review",
-    type: "Housing",
-  },
-  {
-    name: "Example Commercial Project",
-    location: "Newton Centre",
-    status: "Proposed",
-    type: "Commercial",
-  },
-  {
-    name: "Example Zoning Matter",
-    location: "Auburndale",
-    status: "Scheduled for Hearing",
-    type: "Zoning",
-  },
-];
-
+import { projects } from "@/data/projects";
 const villages = [
   "Auburndale",
   "Chestnut Hill",
@@ -168,7 +148,7 @@ export default function Home() {
               <h3 className="mt-5 text-xl font-semibold">{project.name}</h3>
 
               <p className="mt-2 text-sm text-slate-600">
-                {project.location}
+                {project.address}
               </p>
 
               <button className="mt-6 text-sm font-semibold underline underline-offset-4">
