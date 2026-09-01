@@ -36,13 +36,13 @@ function slugify(text) {
     .replace(/^-+|-+$/g, "");
 }
 
-function extractLinks(row) {
+function extractLinks(html) {
   const links = [];
 
   const pattern =
     /<a[^>]*href=["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi;
 
-  for (const match of row.matchAll(pattern)) {
+  for (const match of html.matchAll(pattern)) {
     const href = match[1];
     const label = cleanText(match[2]);
 
@@ -54,13 +54,163 @@ function extractLinks(row) {
       ? href
       : new URL(href, SOURCE_URL).href;
 
-    links.push({
-      label,
-      url,
-    });
+    if (!links.some((link) => link.url === url)) {
+      links.push({
+        label,
+        url,
+      });
+    }
   }
 
   return links;
+}
+
+function extractVillage(name) {
+  const villages = [
+    "Auburndale",
+    "Chestnut Hill",
+    "Newton Centre",
+    "Newton Corner",
+    "Newton Highlands",
+    "Newton Lower Falls",
+    "Newton Upper Falls",
+    "Newtonville",
+    "Nonantum",
+    "Oak Hill",
+    "Thompsonville",
+    "Waban",
+    "West Newton",
+  ];
+
+  const cleanedName = cleanText(name).toLowerCase();
+
+  const village = villages.find((item) =>
+    cleanedName.includes(item.toLowerCase())
+  );
+
+  return village ?? "Unknown";
+}
+
+function standardizeStatus(rawStatus) {
+  const status = cleanText(rawStatus).toLowerCase();
+
+  if (status.includes("under construction")) {
+    return "Under Construction";
+  }
+
+  if (
+    status.includes("complete") ||
+    status.includes("completed")
+  ) {
+    return "Completed";
+  }
+
+  if (
+    status.includes("denied") &&
+    status.includes("appeal")
+  ) {
+    return "Appealed";
+  }
+
+  if (status.includes("denied")) {
+    return "Denied";
+  }
+
+  if (status.includes("withdrawn")) {
+    return "Withdrawn";
+  }
+
+  if (status.includes("continued")) {
+    return "Continued";
+  }
+
+  if (
+    status.includes("scheduled") ||
+    status.includes("hearing")
+  ) {
+    return "Scheduled for Hearing";
+  }
+
+  if (status.includes("filed")) {
+    return "Submitted";
+  }
+
+  if (
+    status.includes("approved with conditions") ||
+    status.includes("approval with conditions")
+  ) {
+    return "Approved with Conditions";
+  }
+
+  if (status.includes("approved")) {
+    return "Approved";
+  }
+
+  if (
+    status.includes("proposed") ||
+    status.includes("proposal")
+  ) {
+    return "Proposed";
+  }
+
+  return "Unknown";
+}
+
+function extractFacts(description) {
+  const facts = {
+    units: null,
+    affordableUnits: null,
+    stories: null,
+    parkingSpaces: null,
+  };
+
+  const unitsMatch = description.match(
+    /(\d+)\s+(?:residential\s+)?units?/i
+  );
+
+  if (unitsMatch) {
+    facts.units = Number(unitsMatch[1]);
+  }
+
+  const affordableMatch = description.match(
+    /(\d+)\s*(?:u|units?)\s+(?:designated\s+as\s+)?affordable/i
+  );
+
+  if (affordableMatch) {
+    facts.affordableUnits = Number(affordableMatch[1]);
+  }
+
+  const storiesMatch = description.match(
+    /(\d+)[-\s]story/i
+  );
+
+  if (storiesMatch) {
+    facts.stories = Number(storiesMatch[1]);
+  }
+
+  const parkingMatch = description.match(
+    /(\d{1,4}(?:,\d{3})*)\s+(?:parking\s+spaces|parking\s+stalls)/i
+  );
+
+  if (parkingMatch) {
+    facts.parkingSpaces = Number(
+      parkingMatch[1].replace(/,/g, "")
+    );
+  }
+
+  return facts;
+}
+
+function removeLinkLabels(description, links) {
+  let result = description;
+
+  for (const link of links) {
+    if (link.label.length > 0) {
+      result = result.replace(link.label, " ");
+    }
+  }
+
+  return result.replace(/\s+/g, " ").trim();
 }
 
 function extractProjects(html) {
@@ -71,6 +221,7 @@ function extractProjects(html) {
 
   for (const rowMatch of html.matchAll(rowPattern)) {
     const row = rowMatch[1];
+
     const cells = [];
 
     for (const cellMatch of row.matchAll(cellPattern)) {
@@ -83,15 +234,12 @@ function extractProjects(html) {
 
     const name = cleanText(cells[0]);
     const rawDescription = cells[1];
-    const rawStatus = cells[2];
-
-    const description = cleanText(rawDescription);
-    const status = cleanText(rawStatus);
+    const rawStatus = cleanText(cells[2]);
 
     if (
       !name ||
-      !description ||
-      !status ||
+      !rawDescription ||
+      !rawStatus ||
       name.toLowerCase().includes("project name")
     ) {
       continue;
@@ -99,13 +247,26 @@ function extractProjects(html) {
 
     const links = extractLinks(row);
 
+    const cleanedDescription = cleanText(rawDescription);
+
+    const description = removeLinkLabels(
+      cleanedDescription,
+      links
+    );
+
+    const standardizedStatus = standardizeStatus(rawStatus);
+
     projects.push({
       id: slugify(name),
       name,
+      village: extractVillage(name),
       description,
-      status,
+      rawStatus,
+      status: standardizedStatus,
       links,
+      facts: extractFacts(description),
       sourceUrl: SOURCE_URL,
+      lastSeen: new Date().toISOString(),
     });
   }
 
@@ -153,7 +314,9 @@ async function main() {
     "utf8"
   );
 
-  console.log(`Saved ${projects.length} projects to ${OUTPUT_FILE}`);
+  console.log(
+    `Saved ${projects.length} projects to ${OUTPUT_FILE}`
+  );
 }
 
 main().catch((error) => {
