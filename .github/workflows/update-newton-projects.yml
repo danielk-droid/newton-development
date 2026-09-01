@@ -1,8 +1,8 @@
-name: Update Newton Development Projects
+name: Update Newton Projects
 
 on:
   schedule:
-    - cron: "0 10 * * *"
+    - cron: "0 6 * * *"
   workflow_dispatch:
 
 permissions:
@@ -13,8 +13,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Check out repository
+      - name: Checkout repository
         uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
 
       - name: Set up Node.js
         uses: actions/setup-node@v5
@@ -23,30 +25,31 @@ jobs:
           cache: npm
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci
 
-      - name: Update Newton projects
+      - name: Update Newton development data
         run: node scripts/update-newton-projects.mjs
 
-      - name: Check for changes
-        id: changes
-        shell: bash
-        run: |
-          if git diff --quiet -- data/newton-source.json; then
-            echo "changed=false" >> "$GITHUB_OUTPUT"
-          else
-            echo "changed=true" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: Commit updated Newton data
-        if: steps.changes.outputs.changed == 'true'
+      - name: Configure Git
         run: |
           git config user.name "Newton Development Bot"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data/newton-source.json
-          git commit -m "Update Newton development data"
-          git push
 
-      - name: No changes
-        if: steps.changes.outputs.changed == 'false'
-        run: echo "Newton project data has not changed."
+      - name: Commit updated data
+        run: |
+          git add data/newton-source.json data/projects.ts
+
+          if git diff --cached --quiet; then
+            echo "No Newton project data changes detected."
+            exit 0
+          fi
+
+          git commit -m "Update Newton development data"
+
+      - name: Sync with latest main
+        run: |
+          git fetch origin main
+          git rebase origin/main
+
+      - name: Push updated data
+        run: git push origin HEAD:main
