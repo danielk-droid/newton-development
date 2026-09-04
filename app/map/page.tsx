@@ -14,7 +14,7 @@ export default function MapPage() {
               Project map
             </h1>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
-              Explore tracked development, public-building, and transportation projects across Newton. Map locations are geocoded from the project addresses and are not manually estimated.
+              Explore tracked development, public-building, and transportation projects across Newton. Map locations are geocoded from the project addresses.
             </p>
           </div>
         </header>
