@@ -41,15 +41,33 @@ function getStatusDescription(status: string) {
   }
 }
 
-const mainStages = [
-  "Proposed",
-  "Submitted",
-  "Under Review",
-  "Scheduled for Hearing",
-  "Approved",
-  "Under Construction",
-  "Completed",
-];
+function getLifecycleStages(type: string) {
+  if (type === "Transportation") {
+    return ["Planning", "Design", "Funding / Approval", "Under Construction", "Completed"];
+  }
+
+  if (type === "Public Building") {
+    return ["Planning", "Design", "Funding / Approval", "Under Construction", "Completed"];
+  }
+
+  return ["Proposed", "Submitted", "Under Review", "Scheduled for Hearing", "Approved", "Under Construction", "Completed"];
+}
+
+function getLifecycleStatus(type: string, status: string, stage: string) {
+  if (type === "Transportation" || type === "Public Building") {
+    if (status === "Completed") return stage === "Completed";
+    if (status === "Under Construction") return stage === "Under Construction";
+    if (["Approved", "Approved with Conditions"].includes(status)) {
+      return ["Planning", "Design", "Funding / Approval"].includes(stage);
+    }
+    if (["Submitted", "Under Review", "Scheduled for Hearing"].includes(status)) {
+      return ["Planning", "Design"].includes(stage);
+    }
+    return stage === "Planning";
+  }
+
+  return false;
+}
 
 function getEventTypeLabel(type: ProjectEvent["type"]) {
   switch (type) {
@@ -79,7 +97,8 @@ export default async function ProjectPage({
 
   if (!project) notFound();
 
-  const currentStageIndex = mainStages.indexOf(project.status);
+  const lifecycleStages = getLifecycleStages(project.type);
+  const currentStageIndex = lifecycleStages.findIndex((stage) => getLifecycleStatus(project.type, project.status, stage));
   const events = sortEvents(
     projectEvents.filter(
       (event) => event.projectId === project.id && event.verified === true
@@ -93,6 +112,8 @@ export default async function ProjectPage({
     (event) => new Date(`${event.date}T23:59:59`) < now
   );
   const nextOpportunity = upcomingEvents.find((event) => Boolean(event.participationUrl)) ?? null;
+  const isPrivateDevelopment = ["Housing", "Mixed-Use", "Commercial"].includes(project.type);
+  const isPublicProject = project.type === "Public Building" || project.type === "Transportation";
 
   return (
     <main className="min-h-screen bg-white text-slate-900">
@@ -127,17 +148,25 @@ export default async function ProjectPage({
         {project.type === "Public Building" && (project.estimatedCost !== null || project.completionDate !== null) && (
           <section className="mt-10 grid gap-4 sm:grid-cols-2">
             {project.estimatedCost !== null && (
-              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-6">
-                <p className="text-sm font-medium text-slate-500">Estimated project cost</p>
-                <p className="mt-2 text-3xl font-bold">${(project.estimatedCost / 1000000).toLocaleString()}M</p>
+              <div className="rounded-2xl border border-indigo-100 bg-indigo-50/60 p-6">
+                <p className="text-sm font-medium text-indigo-700">Estimated project cost</p>
+                <p className="mt-2 text-3xl font-bold">${(project.estimatedCost / 1000000).toLocaleString(undefined, { maximumFractionDigits: 1 })}M</p>
               </div>
             )}
             {project.completionDate !== null && (
-              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-6">
-                <p className="text-sm font-medium text-slate-500">Completion target</p>
+              <div className="rounded-2xl border border-indigo-100 bg-indigo-50/60 p-6">
+                <p className="text-sm font-medium text-indigo-700">Completion target</p>
                 <p className="mt-2 text-3xl font-bold">{project.completionDate}</p>
               </div>
             )}
+          </section>
+        )}
+
+        {project.type === "Transportation" && (
+          <section className="mt-10 rounded-2xl border border-cyan-100 bg-cyan-50/60 p-6">
+            <p className="text-sm font-semibold uppercase tracking-wide text-cyan-800">Transportation project</p>
+            <h2 className="mt-2 text-2xl font-bold">Infrastructure, not development metrics</h2>
+            <p className="mt-2 max-w-3xl leading-7 text-cyan-950">This project tracks transportation infrastructure such as roads, intersections, bridges, pedestrian facilities, bicycle facilities, or transit. Residential-unit and parking metrics do not apply.</p>
           </section>
         )}
 
@@ -171,11 +200,11 @@ export default async function ProjectPage({
         </section>
 
         <section className="mt-10">
-          <p className="text-sm font-semibold uppercase tracking-wide text-slate-500">Project timeline</p>
-          <h2 className="mt-2 text-3xl font-bold tracking-tight">Development process</h2>
+          <p className="text-sm font-semibold uppercase tracking-wide text-slate-500">Project progress</p>
+          <h2 className="mt-2 text-3xl font-bold tracking-tight">{isPublicProject ? "Project lifecycle" : "Development process"}</h2>
           <div className="mt-8 rounded-2xl border border-slate-200 p-6">
             <div className="space-y-6">
-              {mainStages.map((stage, index) => {
+              {lifecycleStages.map((stage, index) => {
                 const isCompleted = currentStageIndex >= 0 && index < currentStageIndex;
                 const isCurrent = currentStageIndex === index;
                 return (
@@ -218,28 +247,30 @@ export default async function ProjectPage({
           ) : (
             <div className="mt-8 rounded-2xl border border-slate-200 p-6">
               <p className="font-semibold">No verified historical records have been added yet.</p>
-              <p className="mt-2 text-sm leading-6 text-slate-600">We are adding dated events only when they can be tied to an official City record.</p>
+              <p className="mt-2 text-sm leading-6 text-slate-600">We are adding dated events only when they can be tied to a verified official City record.</p>
             </div>
           )}
         </section>
 
-        <section className="mt-10">
-          <p className="text-sm font-semibold uppercase tracking-wide text-slate-500">Project facts</p>
-          <h2 className="mt-2 text-3xl font-bold tracking-tight">At a glance</h2>
-          <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {[
-              ["Residential units", project.facts.units],
-              ["Affordable units", project.facts.affordableUnits],
-              ["Stories", project.facts.stories],
-              ["Parking spaces", project.facts.parkingSpaces],
-            ].map(([label, value]) => (
-              <div key={label} className="rounded-2xl border border-slate-200 p-6">
-                <p className="text-sm font-medium text-slate-500">{label}</p>
-                <p className="mt-2 text-3xl font-bold">{formatNumber(value as number | null)}</p>
-              </div>
-            ))}
-          </div>
-        </section>
+        {isPrivateDevelopment && (
+          <section className="mt-10">
+            <p className="text-sm font-semibold uppercase tracking-wide text-slate-500">Project facts</p>
+            <h2 className="mt-2 text-3xl font-bold tracking-tight">At a glance</h2>
+            <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              {[
+                ["Residential units", project.facts.units],
+                ["Affordable units", project.facts.affordableUnits],
+                ["Stories", project.facts.stories],
+                ["Parking spaces", project.facts.parkingSpaces],
+              ].map(([label, value]) => (
+                <div key={label} className="rounded-2xl border border-slate-200 p-6">
+                  <p className="text-sm font-medium text-slate-500">{label}</p>
+                  <p className="mt-2 text-3xl font-bold">{formatNumber(value as number | null)}</p>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
 
         <section className="mt-10">
           <p className="text-sm font-semibold uppercase tracking-wide text-slate-500">Official sources</p>
@@ -247,7 +278,7 @@ export default async function ProjectPage({
           <p className="mt-3 max-w-2xl leading-7 text-slate-600">Newton Development is an independent project and is not affiliated with the City of Newton. Use the official sources below to review the underlying records.</p>
           <div className="mt-8 space-y-3">
             <a href={project.sourceUrl} target="_blank" rel="noopener noreferrer" className="block rounded-xl border border-slate-200 p-5 hover:bg-slate-50">
-              <p className="font-semibold">{project.type === "Public Building" ? "City public-building project page" : "City development-project page"}</p>
+              <p className="font-semibold">{project.type === "Public Building" ? "City public-building project page" : project.type === "Transportation" ? "City transportation project page" : "City development-project page"}</p>
               <p className="mt-1 text-sm text-slate-600">Official City source used for this project.</p>
             </a>
             {project.links.map((link) => (
