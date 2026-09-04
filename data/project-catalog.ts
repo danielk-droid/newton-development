@@ -2,6 +2,7 @@ import sourceData from "./newton-source.json";
 import { projects, type Project } from "./projects";
 import { publicProjects } from "./public-projects";
 import { transportationProjects } from "./transportation-projects";
+import { projectHighlights, type ProjectHighlight } from "./project-highlights";
 
 type ProjectFacts = {
   units: number | null;
@@ -17,6 +18,7 @@ export type CatalogProject = Project & {
     url: string;
   }[];
   facts: ProjectFacts;
+  highlights: ProjectHighlight[];
   estimatedCost: number | null;
   completionDate: string | null;
 };
@@ -37,6 +39,7 @@ export const allProjects: CatalogProject[] = [
         stories: null,
         parkingSpaces: null,
       },
+      highlights: projectHighlights[project.id] ?? [],
       estimatedCost: null,
       completionDate: null,
     };
@@ -60,6 +63,7 @@ export const allProjects: CatalogProject[] = [
       stories: project.facts.stories,
       parkingSpaces: project.facts.parkingSpaces,
     },
+    highlights: projectHighlights[project.id] ?? [],
     estimatedCost: project.facts.estimatedCost,
     completionDate: project.facts.completionDate,
   })),
@@ -71,5 +75,6 @@ export const allProjects: CatalogProject[] = [
       stories: project.facts.stories,
       parkingSpaces: project.facts.parkingSpaces,
     },
+    highlights: projectHighlights[project.id] ?? [],
   })),
 ];
