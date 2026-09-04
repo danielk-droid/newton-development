@@ -1,8 +1,17 @@
 import { projects, type Project } from "./projects";
 import { publicProjects } from "./public-projects";
 
-export const allProjects: Project[] = [
-  ...projects,
+export type CatalogProject = Project & {
+  estimatedCost: number | null;
+  completionDate: string | null;
+};
+
+export const allProjects: CatalogProject[] = [
+  ...projects.map((project) => ({
+    ...project,
+    estimatedCost: null,
+    completionDate: null,
+  })),
   ...publicProjects.map((project) => ({
     id: project.id,
     name: project.name,
@@ -14,5 +23,7 @@ export const allProjects: Project[] = [
     lastUpdated: project.lastUpdated,
     sourceUrl: project.sourceUrl,
     history: [],
+    estimatedCost: project.facts.estimatedCost,
+    completionDate: project.facts.completionDate,
   })),
 ];
