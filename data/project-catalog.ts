@@ -1,6 +1,7 @@
 import sourceData from "./newton-source.json";
 import { projects, type Project } from "./projects";
 import { publicProjects } from "./public-projects";
+import { transportationProjects } from "./transportation-projects";
 
 type ProjectFacts = {
   units: number | null;
@@ -61,5 +62,14 @@ export const allProjects: CatalogProject[] = [
     },
     estimatedCost: project.facts.estimatedCost,
     completionDate: project.facts.completionDate,
+  })),
+  ...transportationProjects.map((project) => ({
+    ...project,
+    facts: {
+      units: project.facts.units,
+      affordableUnits: project.facts.affordableUnits,
+      stories: project.facts.stories,
+      parkingSpaces: project.facts.parkingSpaces,
+    },
   })),
 ];
