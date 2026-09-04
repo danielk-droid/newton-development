@@ -94,15 +94,6 @@ export default async function ProjectPage({
   );
   const nextOpportunity = upcomingEvents.find((event) => Boolean(event.participationUrl)) ?? null;
 
-  const projectFacts = {
-    units: null,
-    affordableUnits: null,
-    stories: null,
-    parkingSpaces: null,
-  };
-
-  const isPublicBuilding = project.type === "Public Building";
-
   return (
     <main className="min-h-screen bg-white text-slate-900">
       <div className="mx-auto max-w-5xl px-6 py-12">
@@ -133,16 +124,20 @@ export default async function ProjectPage({
           </div>
         </section>
 
-        {isPublicBuilding && project.completionDate && (
+        {project.type === "Public Building" && (project.estimatedCost !== null || project.completionDate !== null) && (
           <section className="mt-10 grid gap-4 sm:grid-cols-2">
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-6">
-              <p className="text-sm font-medium text-slate-500">Estimated project cost</p>
-              <p className="mt-2 text-3xl font-bold">{project.estimatedCost ? `$${(project.estimatedCost / 1000000).toLocaleString()}M` : "—"}</p>
-            </div>
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-6">
-              <p className="text-sm font-medium text-slate-500">Current completion target</p>
-              <p className="mt-2 text-3xl font-bold">{project.completionDate}</p>
-            </div>
+            {project.estimatedCost !== null && (
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-6">
+                <p className="text-sm font-medium text-slate-500">Estimated project cost</p>
+                <p className="mt-2 text-3xl font-bold">${(project.estimatedCost / 1000000).toLocaleString()}M</p>
+              </div>
+            )}
+            {project.completionDate !== null && (
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-6">
+                <p className="text-sm font-medium text-slate-500">Completion target</p>
+                <p className="mt-2 text-3xl font-bold">{project.completionDate}</p>
+              </div>
+            )}
           </section>
         )}
 
@@ -162,9 +157,7 @@ export default async function ProjectPage({
               <h3 className="mt-4 text-2xl font-bold tracking-tight">{nextOpportunity.title}</h3>
               <p className="mt-3 max-w-2xl leading-7 text-slate-600">{nextOpportunity.description}</p>
               <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-                {nextOpportunity.participationUrl && (
-                  <a href={nextOpportunity.participationUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center justify-center rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-700">Participation information <span aria-hidden="true" className="ml-2">↗</span></a>
-                )}
+                {nextOpportunity.participationUrl && <a href={nextOpportunity.participationUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center justify-center rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-700">Participation information <span aria-hidden="true" className="ml-2">↗</span></a>}
                 <a href={nextOpportunity.sourceUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-900 hover:bg-slate-100">Official record <span aria-hidden="true" className="ml-2">↗</span></a>
               </div>
             </div>
@@ -235,10 +228,10 @@ export default async function ProjectPage({
           <h2 className="mt-2 text-3xl font-bold tracking-tight">At a glance</h2>
           <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {[
-              ["Residential units", projectFacts.units],
-              ["Affordable units", projectFacts.affordableUnits],
-              ["Stories", projectFacts.stories],
-              ["Parking spaces", projectFacts.parkingSpaces],
+              ["Residential units", project.facts.units],
+              ["Affordable units", project.facts.affordableUnits],
+              ["Stories", project.facts.stories],
+              ["Parking spaces", project.facts.parkingSpaces],
             ].map(([label, value]) => (
               <div key={label} className="rounded-2xl border border-slate-200 p-6">
                 <p className="text-sm font-medium text-slate-500">{label}</p>
