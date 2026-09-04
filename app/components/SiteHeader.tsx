@@ -11,7 +11,6 @@ export default function SiteHeader() {
 
         <nav aria-label="Primary navigation" className="hidden items-center gap-1 sm:flex">
           <Link href="/projects" className="rounded-lg px-3 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-100 hover:text-slate-950">Projects</Link>
-          <Link href="/map" className="rounded-lg px-3 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-100 hover:text-slate-950">Map</Link>
         </nav>
 
         <Link href="/map" className="inline-flex shrink-0 items-center gap-2 rounded-lg bg-slate-900 px-3.5 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-700">
