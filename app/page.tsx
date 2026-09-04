@@ -9,13 +9,6 @@ type ProjectFacts = {
   parkingSpaces: number | null;
 };
 
-type ProjectHistoryEntry = {
-  status: string;
-  rawStatus: string;
-  date: string;
-  type: "initial" | "status-change";
-};
-
 type Project = {
   id: string;
   name: string;
@@ -23,7 +16,6 @@ type Project = {
   status: string;
   village?: string;
   facts?: ProjectFacts;
-  history?: ProjectHistoryEntry[];
 };
 
 type SourceData = {
@@ -134,22 +126,6 @@ export default async function HomePage() {
   const villages = Object.entries(villageCounts).sort(
     (a, b) => b[1] - a[1]
   );
-
-  const recentChanges = projects
-    .flatMap((project) =>
-      (project.history ?? [])
-        .filter((entry) => entry.type === "status-change")
-        .map((entry) => ({
-          project,
-          entry,
-        }))
-    )
-    .sort(
-      (a, b) =>
-        new Date(b.entry.date).getTime() -
-        new Date(a.entry.date).getTime()
-    )
-    .slice(0, 5);
 
   const activeProjects = projects
     .filter(
@@ -287,7 +263,7 @@ export default async function HomePage() {
           <div className="flex items-end justify-between gap-4">
             <div>
               <p className="text-sm font-semibold uppercase tracking-wide text-slate-500">
-                What's happening
+                What is happening
               </p>
 
               <h2 className="mt-2 text-3xl font-bold tracking-tight">
@@ -344,54 +320,6 @@ export default async function HomePage() {
             ))}
           </div>
         </section>
-
-        {recentChanges.length > 0 && (
-          <section className="mt-16">
-            <div className="flex items-end justify-between gap-4">
-              <div>
-                <p className="text-sm font-semibold uppercase tracking-wide text-slate-500">
-                  Recent activity
-                </p>
-
-                <h2 className="mt-2 text-3xl font-bold tracking-tight">
-                  Recent status changes
-                </h2>
-              </div>
-            </div>
-
-            <div className="mt-8 rounded-2xl border border-slate-200">
-              <div className="divide-y divide-slate-200">
-                {recentChanges.map(({ project, entry }) => (
-                  <Link
-                    key={`${project.id}-${entry.date}`}
-                    href={`/projects/${project.id}`}
-                    className="flex flex-col gap-3 p-6 transition hover:bg-slate-50 sm:flex-row sm:items-center sm:justify-between"
-                  >
-                    <div>
-                      <p className="font-semibold text-slate-900">
-                        {project.name}
-                      </p>
-
-                      <div className="mt-2 flex flex-wrap items-center gap-2">
-                        <span className="rounded-full bg-slate-100 px-3 py-1 text-sm font-medium text-slate-700">
-                          Status changed
-                        </span>
-
-                        <span className="text-sm text-slate-500">
-                          → {entry.status}
-                        </span>
-                      </div>
-                    </div>
-
-                    <p className="text-sm text-slate-500">
-                      {formatDate(entry.date)}
-                    </p>
-                  </Link>
-                ))}
-              </div>
-            </div>
-          </section>
-        )}
 
         <section className="mt-16">
           <div className="flex items-end justify-between gap-4">

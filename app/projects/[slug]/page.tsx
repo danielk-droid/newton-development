@@ -135,7 +135,7 @@ function getStatusDescription(status: string) {
       return "The project was denied.";
 
     case "Appealed":
-      return "The project's decision or approval has been appealed.";
+      return "The project&apos;s decision or approval has been appealed.";
 
     case "Withdrawn":
       return "The project application has been withdrawn.";
@@ -643,7 +643,7 @@ export default async function ProjectPage({
 
               <p className="mt-1 text-sm text-slate-600">
                 Official City source used to collect this
-                project's current status.
+                project&apos;s current status.
               </p>
             </a>
 
@@ -674,7 +674,7 @@ export default async function ProjectPage({
 
           <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
             Current project information is collected from
-            the City of Newton's public development-project
+            the City of Newton&apos;s public development-project
             listing. Historical events are added separately
             and are displayed only when they are tied to a
             verified official record.
