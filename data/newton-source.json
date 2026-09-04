@@ -1,15 +1,26 @@
 {
   "source": "https://www.newtonma.gov/government/planning/development-projects",
-  "fetchedAt": "2026-09-03T06:21:56.676Z",
+  "fetchedAt": "2026-09-04T00:40:57.859Z",
   "projectCount": 13,
   "projects": [
     {
       "id": "528-boylston-street-rt-9-thompsonville",
+      "slug": "528-boylston-street-rt-9-thompsonville",
       "name": "528 Boylston Street (Rt 9), Thompsonville",
+      "address": "528 Boylston Street (Rt 9)",
       "village": "Thompsonville",
-      "description": "Replacement of commercial landscape yard and two 2-family homes with a 6-story rental apartment building with amenities",
-      "rawStatus": "Comprehensive Permit approved",
       "status": "Approved",
+      "rawStatus": "Comprehensive Permit approved",
+      "type": "Development Project",
+      "description": "Replacement of commercial landscape yard and two 2-family homes with a 6-story rental apartment building with amenities",
+      "facts": {
+        "units": null,
+        "affordableUnits": null,
+        "stories": 6,
+        "parkingSpaces": null
+      },
+      "lastUpdated": "2026-09-04T00:40:57.859Z",
+      "sourceUrl": "https://www.newtonma.gov/government/planning/development-projects",
       "links": [
         {
           "label": "Permit Application Link",
@@ -20,22 +31,32 @@
           "url": "https://www.newtonma.gov/government/planning/development-review/high-interest-projects/boylston-street-528"
         }
       ],
-      "facts": {
-        "units": null,
-        "affordableUnits": null,
-        "stories": 6,
-        "parkingSpaces": null
+      "location": {
+        "latitude": null,
+        "longitude": null,
+        "source": null
       },
-      "sourceUrl": "https://www.newtonma.gov/government/planning/development-projects",
-      "lastSeen": "2026-09-03T06:21:56.674Z"
+      "lastSeen": "2026-09-04T00:40:57.859Z",
+      "history": []
     },
     {
       "id": "northland-charlemont-160-charlemont-st-newton-highlands",
+      "slug": "northland-charlemont-160-charlemont-st-newton-highlands",
       "name": "Northland Charlemont: 160 Charlemont St, Newton Highlands",
+      "address": "Northland Charlemont: 160 Charlemont St",
       "village": "Newton Highlands",
-      "description": "Development of industrial site off Charlemont and Christina Streets",
-      "rawStatus": "Comprehensive Permit approved",
       "status": "Approved",
+      "rawStatus": "Comprehensive Permit approved",
+      "type": "Development Project",
+      "description": "Development of industrial site off Charlemont and Christina Streets",
+      "facts": {
+        "units": null,
+        "affordableUnits": null,
+        "stories": null,
+        "parkingSpaces": null
+      },
+      "lastUpdated": "2026-09-04T00:40:57.859Z",
+      "sourceUrl": "https://www.newtonma.gov/government/planning/development-projects",
       "links": [
         {
           "label": "Permit Application Link",
@@ -46,22 +67,32 @@
           "url": "https://www.newtonma.gov/government/planning/development-review/high-interest-projects/northland-charlemont-40b/-fsiteid-1#!/"
         }
       ],
-      "facts": {
-        "units": null,
-        "affordableUnits": null,
-        "stories": null,
-        "parkingSpaces": null
+      "location": {
+        "latitude": null,
+        "longitude": null,
+        "source": null
       },
-      "sourceUrl": "https://www.newtonma.gov/government/planning/development-projects",
-      "lastSeen": "2026-09-03T06:21:56.675Z"
+      "lastSeen": "2026-09-04T00:40:57.859Z",
+      "history": []
     },
     {
-      "id": "38-crafts-streets-newtonville",
-      "name": "38 Crafts Streets, Newtonville",
+      "id": "38-crafts-street-newtonville",
+      "slug": "38-crafts-street-newtonville",
+      "name": "38 Crafts Street, Newtonville",
+      "address": "38 Crafts Street",
       "village": "Newtonville",
-      "description": "Proposed six-story multifamily building with 234 residential units and 290 parking stalls with 59 units designated as affordable for low- or moderate-income persons or families",
-      "rawStatus": "Comprehensive Permit filed",
       "status": "Submitted",
+      "rawStatus": "Comprehensive Permit filed",
+      "type": "Development Project",
+      "description": "Proposed six-story multifamily building with 234 residential units and 290 parking stalls with 59 units designated as affordable for low- or moderate-income persons or families",
+      "facts": {
+        "units": 234,
+        "affordableUnits": 59,
+        "stories": 6,
+        "parkingSpaces": 290
+      },
+      "lastUpdated": "2026-09-04T00:40:57.859Z",
+      "sourceUrl": "https://www.newtonma.gov/government/planning/development-projects",
       "links": [
         {
           "label": "Permit Application Link",
@@ -72,22 +103,32 @@
           "url": "https://www.newtonma.gov/government/planning/high-interest-projects/crafts-st-38"
         }
       ],
-      "facts": {
-        "units": 234,
-        "affordableUnits": 59,
-        "stories": null,
-        "parkingSpaces": 290
+      "location": {
+        "latitude": null,
+        "longitude": null,
+        "source": null
       },
-      "sourceUrl": "https://www.newtonma.gov/government/planning/development-projects",
-      "lastSeen": "2026-09-03T06:21:56.675Z"
+      "lastSeen": "2026-09-04T00:40:57.859Z",
+      "history": []
     },
     {
       "id": "78-crafts-street-newtonville",
+      "slug": "78-crafts-street-newtonville",
       "name": "78 Crafts Street, Newtonville",
+      "address": "78 Crafts Street",
       "village": "Newtonville",
-      "description": "Replacement of 10+ industrial buildings and one residential building with four 4-to 6-story rental apartment buildings and one 2-story parking structure",
-      "rawStatus": "Comprehensive Permit approved",
       "status": "Approved",
+      "rawStatus": "Comprehensive Permit approved",
+      "type": "Development Project",
+      "description": "Replacement of 10+ industrial buildings and one residential building with four 4-to 6-story rental apartment buildings and one 2-story parking structure",
+      "facts": {
+        "units": null,
+        "affordableUnits": null,
+        "stories": 6,
+        "parkingSpaces": null
+      },
+      "lastUpdated": "2026-09-04T00:40:57.859Z",
+      "sourceUrl": "https://www.newtonma.gov/government/planning/development-projects",
       "links": [
         {
           "label": "Permit Application Link",
@@ -98,22 +139,32 @@
           "url": "https://www.newtonma.gov/government/planning/development-review/high-interest-projects/crafts-street-78/-fsiteid-1#!/"
         }
       ],
-      "facts": {
-        "units": null,
-        "affordableUnits": null,
-        "stories": 6,
-        "parkingSpaces": null
+      "location": {
+        "latitude": null,
+        "longitude": null,
+        "source": null
       },
-      "sourceUrl": "https://www.newtonma.gov/government/planning/development-projects",
-      "lastSeen": "2026-09-03T06:21:56.675Z"
+      "lastSeen": "2026-09-04T00:40:57.859Z",
+      "history": []
     },
     {
       "id": "riverside-mbta-riverside-t-station-355-grove-st-and-399-grove-st-auburndale",
+      "slug": "riverside-mbta-riverside-t-station-355-grove-st-and-399-grove-st-auburndale",
       "name": "Riverside: MBTA Riverside T Station, 355 Grove St and 399 Grove St, Auburndale",
+      "address": "Riverside: MBTA Riverside T Station",
       "village": "Auburndale",
-      "description": "Development of a portion of existing parking lot for mixed use",
-      "rawStatus": "Special Permit application approved",
       "status": "Approved",
+      "rawStatus": "Special Permit application approved",
+      "type": "Development Project",
+      "description": "Development of a portion of existing parking lot for mixed use",
+      "facts": {
+        "units": null,
+        "affordableUnits": null,
+        "stories": null,
+        "parkingSpaces": null
+      },
+      "lastUpdated": "2026-09-04T00:40:57.859Z",
+      "sourceUrl": "https://www.newtonma.gov/government/planning/development-projects",
       "links": [
         {
           "label": "Permit Application Link",
@@ -124,22 +175,32 @@
           "url": "https://www.newtonma.gov/government/planning/development-review/high-interest-projects/riverside-special-permit-2020"
         }
       ],
-      "facts": {
-        "units": null,
-        "affordableUnits": null,
-        "stories": null,
-        "parkingSpaces": null
+      "location": {
+        "latitude": null,
+        "longitude": null,
+        "source": null
       },
-      "sourceUrl": "https://www.newtonma.gov/government/planning/development-projects",
-      "lastSeen": "2026-09-03T06:21:56.675Z"
+      "lastSeen": "2026-09-04T00:40:57.859Z",
+      "history": []
     },
     {
       "id": "134-hancock-street-and-161-163-and-169-grove-street-auburndale",
+      "slug": "134-hancock-street-and-161-163-and-169-grove-street-auburndale",
       "name": "134 Hancock Street and 161-163 and 169 Grove Street, Auburndale",
+      "address": "134 Hancock Street and 161-163 and 169 Grove Street",
       "village": "Auburndale",
-      "description": "Proposal for adaptive re-use of three vacant single family historic buildings into an estimated 5-11 units of affordable housing",
-      "rawStatus": "Going back to Real Property Reuse Committee - date TBD",
       "status": "Unknown",
+      "rawStatus": "Going back to Real Property Reuse Committee - date TBD",
+      "type": "Development Project",
+      "description": "Proposal for adaptive re-use of three vacant single family historic buildings into an estimated 5-11 units of affordable housing",
+      "facts": {
+        "units": 11,
+        "affordableUnits": 11,
+        "stories": null,
+        "parkingSpaces": null
+      },
+      "lastUpdated": "2026-09-04T00:40:57.859Z",
+      "sourceUrl": "https://www.newtonma.gov/government/planning/development-projects",
       "links": [
         {
           "label": "Permit Application Link",
@@ -150,44 +211,64 @@
           "url": "https://www.newtonma.gov/government/planning/zoning-and-development/high-interest-projects/walker-center-reuse-project#!/"
         }
       ],
-      "facts": {
-        "units": 11,
-        "affordableUnits": null,
-        "stories": null,
-        "parkingSpaces": null
+      "location": {
+        "latitude": null,
+        "longitude": null,
+        "source": null
       },
-      "sourceUrl": "https://www.newtonma.gov/government/planning/development-projects",
-      "lastSeen": "2026-09-03T06:21:56.675Z"
+      "lastSeen": "2026-09-04T00:40:57.859Z",
+      "history": []
     },
     {
       "id": "portion-of-former-walker-center-for-ecumenical-exchange-138-144-hancock-street-auburndale",
+      "slug": "portion-of-former-walker-center-for-ecumenical-exchange-138-144-hancock-street-auburndale",
       "name": "Portion of former Walker Center for Ecumenical Exchange: 138-144 Hancock Street, Auburndale",
+      "address": "Portion of former Walker Center for Ecumenical Exchange: 138-144 Hancock Street",
       "village": "Auburndale",
-      "description": "Adaptive re-use of two vacant buildings, plus new construction, to result in 16 housing units",
-      "rawStatus": "Special Permit approved",
       "status": "Approved",
-      "links": [
-        {
-          "label": "Permit Application Link",
-          "url": "https://newtonma.portal.opengov.com/locations/99968"
-        }
-      ],
+      "rawStatus": "Special Permit approved",
+      "type": "Development Project",
+      "description": "Adaptive re-use of two vacant buildings, plus new construction, to result in 16 housing units",
       "facts": {
         "units": null,
         "affordableUnits": null,
         "stories": null,
         "parkingSpaces": null
       },
+      "lastUpdated": "2026-09-04T00:40:57.859Z",
       "sourceUrl": "https://www.newtonma.gov/government/planning/development-projects",
-      "lastSeen": "2026-09-03T06:21:56.675Z"
+      "links": [
+        {
+          "label": "Permit Application Link",
+          "url": "https://newtonma.portal.opengov.com/locations/99968"
+        }
+      ],
+      "location": {
+        "latitude": null,
+        "longitude": null,
+        "source": null
+      },
+      "lastSeen": "2026-09-04T00:40:57.859Z",
+      "history": []
     },
     {
       "id": "northland-needham-street-275-281-needham-st-156-oak-st-55-tower-rd-upper-falls-400-main-st-340-main-st",
+      "slug": "northland-needham-street-275-281-needham-st-156-oak-st-55-tower-rd-upper-falls-400-main-st-340-main-st",
       "name": "Northland Needham Street: 275-281 Needham St, 156 Oak St, 55 Tower Rd, Upper Falls, 400 Main St, 340 Main St",
+      "address": "Northland Needham Street: 275-281 Needham St",
       "village": "Unknown",
-      "description": "10 new buildings varying in height from 3 to 8 stories, and adaptive reuse of existing mill building for 100 units. Total of 822 unites (145u affordable), 90,000sf retail space, surface parking for 1,070 cars, and a public splash park",
-      "rawStatus": "Under construction",
       "status": "Under Construction",
+      "rawStatus": "Under construction",
+      "type": "Development Project",
+      "description": "10 new buildings varying in height from 3 to 8 stories, and adaptive reuse of existing mill building for 100 units. Total of 822 unites (145u affordable), 90,000sf retail space, surface parking for 1,070 cars, and a public splash park",
+      "facts": {
+        "units": 100,
+        "affordableUnits": null,
+        "stories": 8,
+        "parkingSpaces": null
+      },
+      "lastUpdated": "2026-09-04T00:40:57.859Z",
+      "sourceUrl": "https://www.newtonma.gov/government/planning/development-projects",
       "links": [
         {
           "label": "Permit Application Link",
@@ -198,66 +279,96 @@
           "url": "https://www.newtonma.gov/government/planning/development-review/high-interest-projects/northland-needham-oak-streets"
         }
       ],
-      "facts": {
-        "units": 100,
-        "affordableUnits": 145,
-        "stories": null,
-        "parkingSpaces": null
+      "location": {
+        "latitude": null,
+        "longitude": null,
+        "source": null
       },
-      "sourceUrl": "https://www.newtonma.gov/government/planning/development-projects",
-      "lastSeen": "2026-09-03T06:21:56.675Z"
+      "lastSeen": "2026-09-04T00:40:57.859Z",
+      "history": []
     },
     {
       "id": "newton-gardens-acquisition-132-north-street-west-newton",
+      "slug": "newton-gardens-acquisition-132-north-street-west-newton",
       "name": "Newton Gardens Acquisition: 132 North Street, West Newton",
+      "address": "Newton Gardens Acquisition: 132 North Street",
       "village": "West Newton",
-      "description": "Acquisition of 112-unit apartment complex for long-term affordability",
-      "rawStatus": "Complete - funding all closed and affordability restrictions in place",
       "status": "Completed",
+      "rawStatus": "Complete - funding all closed and affordability restrictions in place",
+      "type": "Development Project",
+      "description": "Acquisition of 112-unit apartment complex for long-term affordability",
+      "facts": {
+        "units": null,
+        "affordableUnits": null,
+        "stories": null,
+        "parkingSpaces": null
+      },
+      "lastUpdated": "2026-09-04T00:40:57.859Z",
+      "sourceUrl": "https://www.newtonma.gov/government/planning/development-projects",
       "links": [
         {
           "label": "Permit Application Link",
           "url": "https://newtonma.portal.opengov.com/locations/117778"
         }
       ],
-      "facts": {
-        "units": null,
-        "affordableUnits": null,
-        "stories": null,
-        "parkingSpaces": null
+      "location": {
+        "latitude": null,
+        "longitude": null,
+        "source": null
       },
-      "sourceUrl": "https://www.newtonma.gov/government/planning/development-projects",
-      "lastSeen": "2026-09-03T06:21:56.676Z"
+      "lastSeen": "2026-09-04T00:40:57.859Z",
+      "history": []
     },
     {
       "id": "41-washington-street-newton-corner",
+      "slug": "41-washington-street-newton-corner",
       "name": "41 Washington Street, Newton Corner",
+      "address": "41 Washington Street",
       "village": "Newton Corner",
-      "description": "Replacement of Victorian home with a 4-story condominium building",
-      "rawStatus": "Comprehensive Permit denied; under appeal with HAC (Housing Appeals Committee)",
       "status": "Appealed",
-      "links": [
-        {
-          "label": "Permit Application Link",
-          "url": "https://newtonma.portal.opengov.com/locations/111462"
-        }
-      ],
+      "rawStatus": "Comprehensive Permit denied; under appeal with HAC (Housing Appeals Committee)",
+      "type": "Development Project",
+      "description": "Replacement of Victorian home with a 4-story condominium building",
       "facts": {
         "units": null,
         "affordableUnits": null,
         "stories": 4,
         "parkingSpaces": null
       },
+      "lastUpdated": "2026-09-04T00:40:57.859Z",
       "sourceUrl": "https://www.newtonma.gov/government/planning/development-projects",
-      "lastSeen": "2026-09-03T06:21:56.676Z"
+      "links": [
+        {
+          "label": "Permit Application Link",
+          "url": "https://newtonma.portal.opengov.com/locations/111462"
+        }
+      ],
+      "location": {
+        "latitude": null,
+        "longitude": null,
+        "source": null
+      },
+      "lastSeen": "2026-09-04T00:40:57.859Z",
+      "history": []
     },
     {
       "id": "west-newton-armory-1135-1137-washington-street-west-newton",
+      "slug": "west-newton-armory-1135-1137-washington-street-west-newton",
       "name": "West Newton Armory: 1135-1137 Washington Street, West Newton",
+      "address": "West Newton Armory: 1135-1137 Washington Street",
       "village": "West Newton",
-      "description": "Adaptive re-use and partial replacement of surplus 3-story Armory building with a 3-story and 4-story building of apartments, below grade parking, and office and community space",
-      "rawStatus": "Under construction",
       "status": "Under Construction",
+      "rawStatus": "Under construction",
+      "type": "Development Project",
+      "description": "Adaptive re-use and partial replacement of surplus 3-story Armory building with a 3-story and 4-story building of apartments, below grade parking, and office and community space",
+      "facts": {
+        "units": null,
+        "affordableUnits": null,
+        "stories": 3,
+        "parkingSpaces": null
+      },
+      "lastUpdated": "2026-09-04T00:40:57.859Z",
+      "sourceUrl": "https://www.newtonma.gov/government/planning/development-projects",
       "links": [
         {
           "label": "Permit Application Link",
@@ -268,22 +379,32 @@
           "url": "https://www.newtonma.gov/government/planning/development-review/high-interest-projects/west-newton-armory"
         }
       ],
-      "facts": {
-        "units": null,
-        "affordableUnits": null,
-        "stories": 3,
-        "parkingSpaces": null
+      "location": {
+        "latitude": null,
+        "longitude": null,
+        "source": null
       },
-      "sourceUrl": "https://www.newtonma.gov/government/planning/development-projects",
-      "lastSeen": "2026-09-03T06:21:56.676Z"
+      "lastSeen": "2026-09-04T00:40:57.859Z",
+      "history": []
     },
     {
       "id": "dunstan-east-newton-crossing-1149-1185-washington-st-and-kempton-pl",
+      "slug": "dunstan-east-newton-crossing-1149-1185-washington-st-and-kempton-pl",
       "name": "Dunstan East/Newton Crossing: 1149-1185 Washington St and Kempton Pl",
+      "address": "Dunstan East/Newton Crossing: 1149-1185 Washington St and Kempton Pl",
       "village": "Unknown",
-      "description": "Construction of 292 residential units, aprx 8,000 SF of ground level retail, and underground parking",
-      "rawStatus": "Under construction",
       "status": "Under Construction",
+      "rawStatus": "Under construction",
+      "type": "Development Project",
+      "description": "Construction of 292 residential units, aprx 8,000 SF of ground level retail, and underground parking",
+      "facts": {
+        "units": 292,
+        "affordableUnits": null,
+        "stories": null,
+        "parkingSpaces": null
+      },
+      "lastUpdated": "2026-09-04T00:40:57.859Z",
+      "sourceUrl": "https://www.newtonma.gov/government/planning/development-projects",
       "links": [
         {
           "label": "Building Permit Link",
@@ -294,36 +415,45 @@
           "url": "https://www.newtonma.gov/government/planning/development-review/high-interest-projects/dunstan-east"
         }
       ],
-      "facts": {
-        "units": 292,
-        "affordableUnits": null,
-        "stories": null,
-        "parkingSpaces": null
+      "location": {
+        "latitude": null,
+        "longitude": null,
+        "source": null
       },
-      "sourceUrl": "https://www.newtonma.gov/government/planning/development-projects",
-      "lastSeen": "2026-09-03T06:21:56.676Z"
+      "lastSeen": "2026-09-04T00:40:57.859Z",
+      "history": []
     },
     {
       "id": "386-390-watertown-street-nonantum",
+      "slug": "386-390-watertown-street-nonantum",
       "name": "386-390 Watertown Street, Nonantum",
+      "address": "386-390 Watertown Street",
       "village": "Nonantum",
-      "description": "Development of a 10-unit apartment with one street-level commercial space",
-      "rawStatus": "Under construction",
       "status": "Under Construction",
-      "links": [
-        {
-          "label": "Permit Application Link",
-          "url": "https://newtonma.portal.opengov.com/locations/112728"
-        }
-      ],
+      "rawStatus": "Under construction",
+      "type": "Development Project",
+      "description": "Development of a 10-unit apartment with one street-level commercial space",
       "facts": {
         "units": null,
         "affordableUnits": null,
         "stories": null,
         "parkingSpaces": null
       },
+      "lastUpdated": "2026-09-04T00:40:57.859Z",
       "sourceUrl": "https://www.newtonma.gov/government/planning/development-projects",
-      "lastSeen": "2026-09-03T06:21:56.676Z"
+      "links": [
+        {
+          "label": "Permit Application Link",
+          "url": "https://newtonma.portal.opengov.com/locations/112728"
+        }
+      ],
+      "location": {
+        "latitude": null,
+        "longitude": null,
+        "source": null
+      },
+      "lastSeen": "2026-09-04T00:40:57.859Z",
+      "history": []
     }
   ]
 }

@@ -53,7 +53,10 @@ function cleanText(value: string): string {
     .trim();
 }
 
-function getVillage(name: string): string {
+function getVillage(
+  name: string,
+  fallbackVillage?: string
+): string {
   const villages = [
     "Auburndale",
     "Chestnut Hill",
@@ -73,15 +76,31 @@ function getVillage(name: string): string {
   const cleanedName = cleanText(name);
 
   const village = villages.find((item) =>
-    cleanedName.toLowerCase().includes(item.toLowerCase())
+    cleanedName
+      .toLowerCase()
+      .includes(item.toLowerCase())
   );
 
-  return village ?? "Unknown";
+  if (village) {
+    return village;
+  }
+
+  if (fallbackVillage) {
+    return fallbackVillage;
+  }
+
+  return "Unknown";
 }
 
-function getAddress(name: string): string {
-  const cleanedName = cleanText(name);
+function getAddress(
+  name: string,
+  fallbackAddress?: string
+): string {
+  if (fallbackAddress) {
+    return cleanText(fallbackAddress);
+  }
 
+  const cleanedName = cleanText(name);
   const parts = cleanedName.split(",");
 
   if (parts.length > 1) {
@@ -95,7 +114,8 @@ function getProjectType(
   name: string,
   description: string
 ): ProjectType {
-  const text = `${name} ${description}`.toLowerCase();
+  const text =
+    `${name} ${description}`.toLowerCase();
 
   if (
     text.includes("mixed use") ||
@@ -116,14 +136,32 @@ function getProjectType(
     return "Housing";
   }
 
+  if (
+    text.includes("zoning") ||
+    text.includes("overlay")
+  ) {
+    return "Zoning";
+  }
+
+  if (
+    text.includes("station") ||
+    text.includes("transit") ||
+    text.includes("transportation")
+  ) {
+    return "Transportation";
+  }
+
   return "Other";
 }
 
-function normalizeStatus(rawStatus: string): {
+function normalizeStatus(
+  rawStatus: string
+): {
   status: ProjectStatus;
   label: string;
 } {
-  const status = cleanText(rawStatus).toLowerCase();
+  const status =
+    cleanText(rawStatus).toLowerCase();
 
   if (status.includes("under construction")) {
     return {
@@ -142,17 +180,20 @@ function normalizeStatus(rawStatus: string): {
     };
   }
 
+  if (
+    status.includes("denied") &&
+    status.includes("appeal")
+  ) {
+    return {
+      status: "Appealed",
+      label: "Appealed",
+    };
+  }
+
   if (status.includes("denied")) {
     return {
       status: "Denied",
       label: "Denied",
-    };
-  }
-
-  if (status.includes("appeal")) {
-    return {
-      status: "Appealed",
-      label: "Appealed",
     };
   }
 
@@ -199,7 +240,10 @@ function normalizeStatus(rawStatus: string): {
     };
   }
 
-  if (status.includes("filed")) {
+  if (
+    status.includes("filed") ||
+    status.includes("submitted")
+  ) {
     return {
       status: "Submitted",
       label: "Submitted",
@@ -220,7 +264,10 @@ function normalizeStatus(rawStatus: string): {
     };
   }
 
-  if (status.includes("cancelled") || status.includes("canceled")) {
+  if (
+    status.includes("cancelled") ||
+    status.includes("canceled")
+  ) {
     return {
       status: "Cancelled",
       label: "Cancelled",
@@ -233,21 +280,111 @@ function normalizeStatus(rawStatus: string): {
   };
 }
 
-export const projects: Project[] = sourceData.projects.map((project) => {
-  const cleanedName = cleanText(project.name);
-  const cleanedDescription = cleanText(project.description);
-  const normalized = normalizeStatus(project.status);
+function getHistory(
+  project: {
+    history?: Array<{
+      date?: string;
+      title?: string;
+      description?: string;
+      sourceUrl?: string;
+      status?: string;
+      changedAt?: string;
+    }>;
+  }
+): ProjectEvent[] {
+  if (!Array.isArray(project.history)) {
+    return [];
+  }
 
-  return {
-    id: project.id,
-    name: cleanedName,
-    address: getAddress(cleanedName),
-    village: getVillage(cleanedName),
-    status: normalized.status,
-    type: getProjectType(cleanedName, cleanedDescription),
-    description: cleanedDescription,
-    lastUpdated: new Date(sourceData.fetchedAt).toLocaleString(),
-    sourceUrl: project.sourceUrl,
-    history: [],
-  };
-});
+  return project.history.map((event) => ({
+    date:
+      event.date ??
+      event.changedAt ??
+      new Date().toISOString(),
+    title:
+      event.title ??
+      event.status ??
+      "Status update",
+    description:
+      event.description ??
+      "Project status update collected from the City source.",
+    sourceUrl:
+      event.sourceUrl ??
+      sourceData.source,
+  }));
+}
+
+function getSourceUrl(
+  project: {
+    sourceUrl?: string;
+    links?: Array<{
+      label: string;
+      url: string;
+    }>;
+  }
+): string {
+  if (project.sourceUrl) {
+    return project.sourceUrl;
+  }
+
+  const cityLink = project.links?.find((link) => {
+    const label = link.label.toLowerCase();
+
+    return (
+      label.includes("city") ||
+      label.includes("project")
+    );
+  });
+
+  return cityLink?.url ?? sourceData.source;
+}
+
+export const projects: Project[] =
+  sourceData.projects.map((project) => {
+    const cleanedName = cleanText(project.name);
+    const cleanedDescription =
+      cleanText(project.description);
+
+    const normalized = normalizeStatus(
+      project.status
+    );
+
+    return {
+      id:
+        project.id ??
+        project.slug ??
+        cleanedName
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, "-")
+          .replace(/^-+|-+$/g, ""),
+
+      name: cleanedName,
+
+      address: getAddress(
+        cleanedName,
+        project.address
+      ),
+
+      village: getVillage(
+        cleanedName,
+        project.village
+      ),
+
+      status: normalized.status,
+
+      type: getProjectType(
+        cleanedName,
+        cleanedDescription
+      ),
+
+      description: cleanedDescription,
+
+      lastUpdated: new Date(
+        sourceData.fetchedAt
+      ).toLocaleString(),
+
+      sourceUrl: getSourceUrl(project),
+
+      history: getHistory(project),
+    };
+  });

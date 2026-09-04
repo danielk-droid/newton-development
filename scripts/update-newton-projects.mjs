@@ -5,6 +5,24 @@ const SOURCE_URL =
 
 const OUTPUT_FILE = "data/newton-source.json";
 
+const USER_AGENT = "NewtonDevelopment/1.0";
+
+const VILLAGES = [
+  "Auburndale",
+  "Chestnut Hill",
+  "Newton Centre",
+  "Newton Corner",
+  "Newton Highlands",
+  "Newton Lower Falls",
+  "Newton Upper Falls",
+  "Newtonville",
+  "Nonantum",
+  "Oak Hill",
+  "Thompsonville",
+  "Waban",
+  "West Newton",
+];
+
 function decodeHtml(text) {
   return text
     .replace(/&nbsp;/gi, " ")
@@ -17,21 +35,26 @@ function decodeHtml(text) {
 }
 
 function cleanText(text) {
-  let result = text;
-
-  for (let i = 0; i < 3; i++) {
-    result = decodeHtml(result);
-  }
-
-  return result
+  return decodeHtml(text)
     .replace(/<[^>]*>/g, " ")
     .replace(/\s+/g, " ")
     .trim();
 }
 
+function normalizeProjectName(name) {
+  const cleaned = cleanText(name);
+
+  if (cleaned.toLowerCase() === "38 crafts streets, newtonville") {
+    return "38 Crafts Street, Newtonville";
+  }
+
+  return cleaned;
+}
+
 function slugify(text) {
   return cleanText(text)
     .toLowerCase()
+    .replace(/&/g, "and")
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
 }
@@ -40,10 +63,10 @@ function extractLinks(html) {
   const links = [];
 
   const pattern =
-    /<a[^>]*href=["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi;
+    /<a\b[^>]*href=["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi;
 
   for (const match of html.matchAll(pattern)) {
-    const href = match[1];
+    const href = decodeHtml(match[1]);
     const label = cleanText(match[2]);
 
     if (!href || !label) {
@@ -66,29 +89,24 @@ function extractLinks(html) {
 }
 
 function extractVillage(name) {
-  const villages = [
-    "Auburndale",
-    "Chestnut Hill",
-    "Newton Centre",
-    "Newton Corner",
-    "Newton Highlands",
-    "Newton Lower Falls",
-    "Newton Upper Falls",
-    "Newtonville",
-    "Nonantum",
-    "Oak Hill",
-    "Thompsonville",
-    "Waban",
-    "West Newton",
-  ];
+  const lower = cleanText(name).toLowerCase();
 
-  const cleanedName = cleanText(name).toLowerCase();
-
-  const village = villages.find((item) =>
-    cleanedName.includes(item.toLowerCase())
+  return (
+    VILLAGES.find((village) =>
+      lower.includes(village.toLowerCase())
+    ) ?? "Unknown"
   );
+}
 
-  return village ?? "Unknown";
+function extractAddress(name) {
+  const cleaned = cleanText(name);
+  const commaIndex = cleaned.indexOf(",");
+
+  if (commaIndex === -1) {
+    return cleaned;
+  }
+
+  return cleaned.slice(0, commaIndex).trim();
 }
 
 function standardizeStatus(rawStatus) {
@@ -98,10 +116,7 @@ function standardizeStatus(rawStatus) {
     return "Under Construction";
   }
 
-  if (
-    status.includes("complete") ||
-    status.includes("completed")
-  ) {
+  if (status.includes("complete")) {
     return "Completed";
   }
 
@@ -120,10 +135,6 @@ function standardizeStatus(rawStatus) {
     return "Withdrawn";
   }
 
-  if (status.includes("continued")) {
-    return "Continued";
-  }
-
   if (
     status.includes("scheduled") ||
     status.includes("hearing")
@@ -131,7 +142,10 @@ function standardizeStatus(rawStatus) {
     return "Scheduled for Hearing";
   }
 
-  if (status.includes("filed")) {
+  if (
+    status.includes("filed") ||
+    status.includes("submitted")
+  ) {
     return "Submitted";
   }
 
@@ -157,55 +171,103 @@ function standardizeStatus(rawStatus) {
 }
 
 function extractFacts(description) {
-  const facts = {
-    units: null,
-    affordableUnits: null,
-    stories: null,
-    parkingSpaces: null,
-  };
+  const text = cleanText(description);
 
-  const unitsMatch = description.match(
-    /(\d+)\s+(?:residential\s+)?units?/i
-  );
+  let units = null;
+  let affordableUnits = null;
+  let stories = null;
+  let parkingSpaces = null;
 
-  if (unitsMatch) {
-    facts.units = Number(unitsMatch[1]);
+  const unitMatches = [
+    ...text.matchAll(
+      /\b(\d[\d,]*)\s+(?:residential\s+)?units?\b/gi
+    ),
+  ];
+
+  if (unitMatches.length > 0) {
+    units = Math.max(
+      ...unitMatches.map((match) =>
+        Number(match[1].replace(/,/g, ""))
+      )
+    );
   }
 
-  const affordableMatch = description.match(
-    /(\d+)\s*(?:u|units?)\s+(?:designated\s+as\s+)?affordable/i
-  );
+  const affordablePatterns = [
+    /\b(\d[\d,]*)\s+affordable\s+units?\b/i,
+    /\b(\d[\d,]*)\s+units?\s+designated\s+as\s+affordable\b/i,
+    /\b(\d[\d,]*)\s+units?\s+.*?affordable\b/i,
+  ];
 
-  if (affordableMatch) {
-    facts.affordableUnits = Number(affordableMatch[1]);
+  for (const pattern of affordablePatterns) {
+    const match = text.match(pattern);
+
+    if (match) {
+      affordableUnits = Number(
+        match[1].replace(/,/g, "")
+      );
+      break;
+    }
   }
 
-  const storiesMatch = description.match(
-    /(\d+)[-\s]story/i
+  const storiesMatch = text.match(
+    /\b(\d+)[-\s]?stor(?:y|ies)\b/i
   );
 
   if (storiesMatch) {
-    facts.stories = Number(storiesMatch[1]);
+    stories = Number(storiesMatch[1]);
   }
 
-  const parkingMatch = description.match(
-    /(\d{1,4}(?:,\d{3})*)\s+(?:parking\s+spaces|parking\s+stalls)/i
+  const numberWordStories = {
+    one: 1,
+    two: 2,
+    three: 3,
+    four: 4,
+    five: 5,
+    six: 6,
+    seven: 7,
+    eight: 8,
+    nine: 9,
+    ten: 10,
+    eleven: 11,
+    twelve: 12,
+  };
+
+  if (stories === null) {
+    const wordStoryMatch = text.match(
+      /\b(one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve)[-\s]?stor(?:y|ies)\b/i
+    );
+
+    if (wordStoryMatch) {
+      stories =
+        numberWordStories[
+          wordStoryMatch[1].toLowerCase()
+        ];
+    }
+  }
+
+  const parkingMatch = text.match(
+    /\b(\d[\d,]*)\s+parking\s+(?:spaces?|stalls?)\b/i
   );
 
   if (parkingMatch) {
-    facts.parkingSpaces = Number(
+    parkingSpaces = Number(
       parkingMatch[1].replace(/,/g, "")
     );
   }
 
-  return facts;
+  return {
+    units,
+    affordableUnits,
+    stories,
+    parkingSpaces,
+  };
 }
 
 function removeLinkLabels(description, links) {
   let result = description;
 
   for (const link of links) {
-    if (link.label.length > 0) {
+    if (link.label) {
       result = result.replace(link.label, " ");
     }
   }
@@ -213,11 +275,14 @@ function removeLinkLabels(description, links) {
   return result.replace(/\s+/g, " ").trim();
 }
 
-function extractProjects(html) {
+function extractProjects(html, fetchedAt) {
   const projects = [];
 
-  const rowPattern = /<tr[^>]*>([\s\S]*?)<\/tr>/gi;
-  const cellPattern = /<t[dh][^>]*>([\s\S]*?)<\/t[dh]>/gi;
+  const rowPattern =
+    /<tr\b[^>]*>([\s\S]*?)<\/tr>/gi;
+
+  const cellPattern =
+    /<t[dh]\b[^>]*>([\s\S]*?)<\/t[dh]>/gi;
 
   for (const rowMatch of html.matchAll(rowPattern)) {
     const row = rowMatch[1];
@@ -232,14 +297,15 @@ function extractProjects(html) {
       continue;
     }
 
-    const name = cleanText(cells[0]);
+    const name = normalizeProjectName(cells[0]);
     const rawDescription = cells[1];
     const rawStatus = cleanText(cells[2]);
 
+    if (!name || !rawDescription || !rawStatus) {
+      continue;
+    }
+
     if (
-      !name ||
-      !rawDescription ||
-      !rawStatus ||
       name.toLowerCase().includes("project name")
     ) {
       continue;
@@ -247,38 +313,168 @@ function extractProjects(html) {
 
     const links = extractLinks(row);
 
-    const cleanedDescription = cleanText(rawDescription);
+    const cleanedDescription =
+      cleanText(rawDescription);
 
     const description = removeLinkLabels(
       cleanedDescription,
       links
     );
 
-    const standardizedStatus = standardizeStatus(rawStatus);
-
     projects.push({
       id: slugify(name),
+      slug: slugify(name),
       name,
+      address: extractAddress(name),
       village: extractVillage(name),
-      description,
+      status: standardizeStatus(rawStatus),
       rawStatus,
-      status: standardizedStatus,
-      links,
+      type: "Development Project",
+      description,
       facts: extractFacts(description),
+      lastUpdated: fetchedAt,
       sourceUrl: SOURCE_URL,
-      lastSeen: new Date().toISOString(),
+      links,
+      location: {
+        latitude: null,
+        longitude: null,
+        source: null,
+      },
+      lastSeen: fetchedAt,
     });
   }
 
-  return projects;
+  const uniqueProjects = new Map();
+
+  for (const project of projects) {
+    uniqueProjects.set(project.id, project);
+  }
+
+  return [...uniqueProjects.values()];
+}
+
+async function readPreviousData() {
+  try {
+    const file = await fs.readFile(
+      OUTPUT_FILE,
+      "utf8"
+    );
+
+    return JSON.parse(file);
+  } catch {
+    return null;
+  }
+}
+
+function getVerifiedHistory(previousProject) {
+  if (!Array.isArray(previousProject?.history)) {
+    return [];
+  }
+
+  return previousProject.history.filter(
+    (event) =>
+      event &&
+      event.verified === true &&
+      typeof event.date === "string" &&
+      typeof event.title === "string" &&
+      typeof event.sourceUrl === "string"
+  );
+}
+
+function preserveVerifiedHistory(
+  projects,
+  previousData
+) {
+  const previousProjects = new Map(
+    (previousData?.projects ?? []).map((project) => [
+      project.id ?? project.slug,
+      project,
+    ])
+  );
+
+  return projects.map((project) => {
+    const previous = previousProjects.get(project.id);
+
+    return {
+      ...project,
+      history: getVerifiedHistory(previous),
+    };
+  });
+}
+
+function preserveExistingLocation(
+  projects,
+  previousData
+) {
+  const previousProjects = new Map(
+    (previousData?.projects ?? []).map((project) => [
+      project.id ?? project.slug,
+      project,
+    ])
+  );
+
+  return projects.map((project) => {
+    const previous = previousProjects.get(project.id);
+
+    if (
+      previous?.location?.latitude != null &&
+      previous?.location?.longitude != null
+    ) {
+      return {
+        ...project,
+        location: previous.location,
+      };
+    }
+
+    return project;
+  });
+}
+
+function detectStatusChanges(
+  projects,
+  previousData
+) {
+  const previousProjects = new Map(
+    (previousData?.projects ?? []).map((project) => [
+      project.id ?? project.slug,
+      project,
+    ])
+  );
+
+  let statusChanges = 0;
+
+  for (const project of projects) {
+    const previous = previousProjects.get(project.id);
+
+    if (
+      previous &&
+      previous.status !== project.status
+    ) {
+      statusChanges++;
+
+      console.log(
+        `Status change observed: ${project.name}: ${previous.status} -> ${project.status}`
+      );
+
+      console.log(
+        "  Observation date is not being recorded as a historical event date."
+      );
+    }
+  }
+
+  return statusChanges;
 }
 
 async function main() {
-  console.log("Fetching Newton Development Projects...");
+  console.log(
+    "Fetching Newton Development Projects..."
+  );
+
+  const fetchedAt = new Date().toISOString();
 
   const response = await fetch(SOURCE_URL, {
     headers: {
-      "User-Agent": "NewtonDevelopmentTracker/1.0",
+      "User-Agent": USER_AGENT,
     },
   });
 
@@ -293,7 +489,10 @@ async function main() {
   console.log("Downloaded Newton page.");
   console.log("Extracting projects...");
 
-  const projects = extractProjects(html);
+  let projects = extractProjects(
+    html,
+    fetchedAt
+  );
 
   if (projects.length === 0) {
     throw new Error(
@@ -301,9 +500,30 @@ async function main() {
     );
   }
 
+  console.log(
+    `Extracted ${projects.length} projects.`
+  );
+
+  const previousData = await readPreviousData();
+
+  projects = preserveExistingLocation(
+    projects,
+    previousData
+  );
+
+  projects = preserveVerifiedHistory(
+    projects,
+    previousData
+  );
+
+  const statusChanges = detectStatusChanges(
+    projects,
+    previousData
+  );
+
   const output = {
     source: SOURCE_URL,
-    fetchedAt: new Date().toISOString(),
+    fetchedAt,
     projectCount: projects.length,
     projects,
   };
@@ -316,6 +536,14 @@ async function main() {
 
   console.log(
     `Saved ${projects.length} projects to ${OUTPUT_FILE}`
+  );
+
+  console.log(
+    `Detected ${statusChanges} status changes.`
+  );
+
+  console.log(
+    "Historical timeline entries were preserved only when explicitly verified."
   );
 }
 
