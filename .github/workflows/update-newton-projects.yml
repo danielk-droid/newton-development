@@ -1,22 +1,30 @@
-name: Update Newton Projects
+name: Update Newton Development Data
 
 on:
   schedule:
+    # Runs every day at 6:00 UTC (2:00 AM Eastern during daylight saving time)
     - cron: "0 6 * * *"
+
+  # Allows you to manually run the update from GitHub Actions
   workflow_dispatch:
 
 permissions:
   contents: write
 
+concurrency:
+  group: update-newton-development-data
+  cancel-in-progress: false
+
 jobs:
-  update-projects:
+  update:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
+      - name: Checkout latest main
         uses: actions/checkout@v5
         with:
           fetch-depth: 0
+          ref: main
 
       - name: Set up Node.js
         uses: actions/setup-node@v5
@@ -30,26 +38,65 @@ jobs:
       - name: Update Newton development data
         run: node scripts/update-newton-projects.mjs
 
+      - name: Check generated data
+        run: |
+          node -e "
+          const fs = require('fs');
+          const data = JSON.parse(fs.readFileSync('data/newton-source.json', 'utf8'));
+
+          if (!Array.isArray(data.projects) || data.projects.length === 0) {
+            throw new Error('Newton project data is empty.');
+          }
+
+          console.log('Projects found:', data.projects.length);
+          console.log('Data source:', data.source);
+          console.log('Fetched at:', data.fetchedAt);
+          "
+
+      - name: Run lint
+        run: npm run lint
+
+      - name: Run production build
+        run: npm run build
+
       - name: Configure Git
         run: |
           git config user.name "Newton Development Bot"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-      - name: Commit updated data
+      - name: Check for changes
+        id: changes
         run: |
-          git add data/newton-source.json data/projects.ts
-
-          if git diff --cached --quiet; then
-            echo "No Newton project data changes detected."
-            exit 0
+          if git diff --quiet -- data/newton-source.json data/projects.ts data/project-events.ts; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "No Newton Development data changes detected."
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            echo "Changes detected."
+            git diff --stat -- data/newton-source.json data/projects.ts data/project-events.ts
           fi
+
+      - name: Commit updated data
+        if: steps.changes.outputs.changed == 'true'
+        run: |
+          git add data/newton-source.json data/projects.ts data/project-events.ts
 
           git commit -m "Update Newton development data"
 
       - name: Sync with latest main
+        if: steps.changes.outputs.changed == 'true'
         run: |
           git fetch origin main
           git rebase origin/main
 
       - name: Push updated data
+        if: steps.changes.outputs.changed == 'true'
         run: git push origin HEAD:main
+
+      - name: Report result
+        run: |
+          if [ "${{ steps.changes.outputs.changed }}" = "true" ]; then
+            echo "Newton Development data was updated and pushed successfully."
+          else
+            echo "Newton Development is already up to date."
+          fi
