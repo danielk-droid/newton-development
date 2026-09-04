@@ -65,6 +65,46 @@ function statusClasses(status: string) {
   }
 }
 
+function typeAccent(type?: string) {
+  switch (type) {
+    case "Public Building":
+      return "border-t-4 border-t-indigo-500";
+    case "Transportation":
+      return "border-t-4 border-t-cyan-600";
+    case "Housing":
+    case "Mixed-Use":
+    case "Commercial":
+      return "border-t-4 border-t-emerald-500";
+    case "Historic Preservation":
+      return "border-t-4 border-t-amber-500";
+    case "Zoning":
+      return "border-t-4 border-t-violet-500";
+    default:
+      return "border-t-4 border-t-slate-400";
+  }
+}
+
+function typeLabel(type?: string) {
+  switch (type) {
+    case "Public Building":
+      return "Public project";
+    case "Transportation":
+      return "Transportation project";
+    case "Housing":
+      return "Housing development";
+    case "Mixed-Use":
+      return "Mixed-use development";
+    case "Commercial":
+      return "Commercial development";
+    case "Historic Preservation":
+      return "Historic preservation";
+    case "Zoning":
+      return "Zoning matter";
+    default:
+      return type ?? "Project";
+  }
+}
+
 function formatNumber(value: number | null) {
   if (value === null) return null;
   return value.toLocaleString();
@@ -72,6 +112,8 @@ function formatNumber(value: number | null) {
 
 function formatCost(value: number | null) {
   if (value === null) return null;
+  if (value >= 1000000) return `$${(value / 1000000).toLocaleString(undefined, { maximumFractionDigits: 1 })}M`;
+  if (value >= 1000) return `$${(value / 1000).toLocaleString(undefined, { maximumFractionDigits: 0 })}K`;
   return `$${value.toLocaleString()}`;
 }
 
@@ -223,12 +265,7 @@ export default function ProjectsClient({ projects }: ProjectsClientProps) {
 
           <div>
             <label htmlFor="type-filter" className="text-sm font-semibold text-slate-900">Type</label>
-            <select
-              id="type-filter"
-              value={type}
-              onChange={(event) => setType(event.target.value)}
-              className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-slate-500 focus:ring-2 focus:ring-slate-200"
-            >
+            <select id="type-filter" value={type} onChange={(event) => setType(event.target.value)} className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-slate-500 focus:ring-2 focus:ring-slate-200">
               <option value="All">All types</option>
               {types.map((item) => <option key={item} value={item}>{item}</option>)}
             </select>
@@ -236,12 +273,7 @@ export default function ProjectsClient({ projects }: ProjectsClientProps) {
 
           <div>
             <label htmlFor="status-filter" className="text-sm font-semibold text-slate-900">Status</label>
-            <select
-              id="status-filter"
-              value={status}
-              onChange={(event) => setStatus(event.target.value)}
-              className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-slate-500 focus:ring-2 focus:ring-slate-200"
-            >
+            <select id="status-filter" value={status} onChange={(event) => setStatus(event.target.value)} className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-slate-500 focus:ring-2 focus:ring-slate-200">
               <option value="All">All statuses</option>
               {statuses.map((item) => <option key={item} value={item}>{item}</option>)}
             </select>
@@ -249,12 +281,7 @@ export default function ProjectsClient({ projects }: ProjectsClientProps) {
 
           <div>
             <label htmlFor="village-filter" className="text-sm font-semibold text-slate-900">Village</label>
-            <select
-              id="village-filter"
-              value={village}
-              onChange={(event) => setVillage(event.target.value)}
-              className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-slate-500 focus:ring-2 focus:ring-slate-200"
-            >
+            <select id="village-filter" value={village} onChange={(event) => setVillage(event.target.value)} className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-slate-500 focus:ring-2 focus:ring-slate-200">
               <option value="All">All villages</option>
               {villages.map((item) => <option key={item} value={item}>{item}</option>)}
             </select>
@@ -262,14 +289,8 @@ export default function ProjectsClient({ projects }: ProjectsClientProps) {
         </div>
 
         <div className="mt-5 flex flex-col gap-3 border-t border-slate-200 pt-5 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-sm text-slate-600">
-            Showing <span className="font-semibold text-slate-900">{filteredProjects.length}</span> of <span className="font-semibold text-slate-900">{projects.length}</span> projects
-          </p>
-          {hasFilters ? (
-            <button type="button" onClick={clearFilters} className="self-start text-sm font-semibold text-slate-700 underline underline-offset-4 hover:text-slate-950 sm:self-auto">Clear filters</button>
-          ) : (
-            <p className="text-sm text-slate-500">Sorted by project status</p>
-          )}
+          <p className="text-sm text-slate-600">Showing <span className="font-semibold text-slate-900">{filteredProjects.length}</span> of <span className="font-semibold text-slate-900">{projects.length}</span> projects</p>
+          {hasFilters ? <button type="button" onClick={clearFilters} className="self-start text-sm font-semibold text-slate-700 underline underline-offset-4 hover:text-slate-950 sm:self-auto">Clear filters</button> : <p className="text-sm text-slate-500">Sorted by project status</p>}
         </div>
       </section>
 
@@ -284,12 +305,14 @@ export default function ProjectsClient({ projects }: ProjectsClientProps) {
           {filteredProjects.map((project) => {
             const factItems = getFactItems(project);
             const statusDescription = getStatusDescription(project.status);
+            const isTransportation = project.type === "Transportation";
+            const isPublicBuilding = project.type === "Public Building";
 
             return (
-              <article key={project.id} className="group flex flex-col rounded-2xl border border-slate-200 bg-white p-6 transition hover:border-slate-300 hover:shadow-md">
+              <article key={project.id} className={`group flex flex-col rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition hover:border-slate-300 hover:shadow-md ${typeAccent(project.type)}`}>
                 <div className="flex flex-wrap items-center gap-2">
                   <span className={`rounded-full px-3 py-1 text-sm font-semibold ${statusClasses(project.status)}`}>{project.status}</span>
-                  {project.type && <span className="rounded-full border border-slate-200 px-3 py-1 text-sm font-medium text-slate-600">{project.type}</span>}
+                  {project.type && <span className="rounded-full border border-slate-200 px-3 py-1 text-sm font-medium text-slate-600">{typeLabel(project.type)}</span>}
                   {project.village && project.village !== "Unknown" && <span className="rounded-full border border-slate-200 px-3 py-1 text-sm font-medium text-slate-600">{project.village}</span>}
                 </div>
 
@@ -297,7 +320,27 @@ export default function ProjectsClient({ projects }: ProjectsClientProps) {
                 <p className="mt-3 line-clamp-4 leading-7 text-slate-600">{project.description}</p>
                 {statusDescription && <p className="mt-4 text-sm font-medium text-slate-500">{statusDescription}</p>}
 
-                {factItems.length > 0 && (
+                {isTransportation && (
+                  <div className="mt-5 rounded-xl border border-cyan-100 bg-cyan-50/60 px-4 py-3">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-cyan-800">Transportation project</p>
+                    <p className="mt-1 text-sm text-cyan-950">Road, transit, pedestrian, bicycle, or intersection infrastructure.</p>
+                  </div>
+                )}
+
+                {isPublicBuilding && factItems.length > 0 && (
+                  <div className="mt-5 rounded-xl border border-indigo-100 bg-indigo-50/60 p-4">
+                    <div className="flex flex-wrap gap-x-6 gap-y-3">
+                      {factItems.map((fact) => (
+                        <div key={fact.label}>
+                          <p className="text-xs font-medium uppercase tracking-wide text-indigo-700">{fact.label}</p>
+                          <p className="mt-1 text-lg font-bold text-slate-950">{fact.value}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {!isPublicBuilding && !isTransportation && factItems.length > 0 && (
                   <div className="mt-5 grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-slate-200 bg-slate-200">
                     {factItems.map((fact) => (
                       <div key={fact.label} className="bg-slate-50 px-3 py-3">
