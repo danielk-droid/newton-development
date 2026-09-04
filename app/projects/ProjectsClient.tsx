@@ -96,13 +96,6 @@ function formatNumber(value: number | null) {
   return value === null ? null : value.toLocaleString();
 }
 
-function formatCost(value: number | null) {
-  if (value === null) return null;
-  if (value >= 1000000) return `$${(value / 1000000).toLocaleString(undefined, { maximumFractionDigits: 1 })}M`;
-  if (value >= 1000) return `$${(value / 1000).toLocaleString(undefined, { maximumFractionDigits: 0 })}K`;
-  return `$${value.toLocaleString()}`;
-}
-
 function getStatusDescription(status: string) {
   switch (status) {
     case "Under Construction": return "Construction is underway.";
