@@ -1,6 +1,6 @@
 {
   "source": "https://www.newtonma.gov/government/planning/development-projects",
-  "fetchedAt": "2026-09-04T00:40:57.859Z",
+  "fetchedAt": "2026-09-04T01:09:23.643Z",
   "projectCount": 13,
   "projects": [
     {
@@ -19,7 +19,7 @@
         "stories": 6,
         "parkingSpaces": null
       },
-      "lastUpdated": "2026-09-04T00:40:57.859Z",
+      "lastUpdated": "2026-09-04T01:09:23.643Z",
       "sourceUrl": "https://www.newtonma.gov/government/planning/development-projects",
       "links": [
         {
@@ -36,7 +36,7 @@
         "longitude": null,
         "source": null
       },
-      "lastSeen": "2026-09-04T00:40:57.859Z",
+      "lastSeen": "2026-09-04T01:09:23.643Z",
       "history": []
     },
     {
@@ -55,7 +55,7 @@
         "stories": null,
         "parkingSpaces": null
       },
-      "lastUpdated": "2026-09-04T00:40:57.859Z",
+      "lastUpdated": "2026-09-04T01:09:23.643Z",
       "sourceUrl": "https://www.newtonma.gov/government/planning/development-projects",
       "links": [
         {
@@ -72,7 +72,7 @@
         "longitude": null,
         "source": null
       },
-      "lastSeen": "2026-09-04T00:40:57.859Z",
+      "lastSeen": "2026-09-04T01:09:23.643Z",
       "history": []
     },
     {
@@ -91,7 +91,7 @@
         "stories": 6,
         "parkingSpaces": 290
       },
-      "lastUpdated": "2026-09-04T00:40:57.859Z",
+      "lastUpdated": "2026-09-04T01:09:23.643Z",
       "sourceUrl": "https://www.newtonma.gov/government/planning/development-projects",
       "links": [
         {
@@ -108,7 +108,7 @@
         "longitude": null,
         "source": null
       },
-      "lastSeen": "2026-09-04T00:40:57.859Z",
+      "lastSeen": "2026-09-04T01:09:23.643Z",
       "history": []
     },
     {
@@ -127,7 +127,7 @@
         "stories": 6,
         "parkingSpaces": null
       },
-      "lastUpdated": "2026-09-04T00:40:57.859Z",
+      "lastUpdated": "2026-09-04T01:09:23.643Z",
       "sourceUrl": "https://www.newtonma.gov/government/planning/development-projects",
       "links": [
         {
@@ -144,7 +144,7 @@
         "longitude": null,
         "source": null
       },
-      "lastSeen": "2026-09-04T00:40:57.859Z",
+      "lastSeen": "2026-09-04T01:09:23.643Z",
       "history": []
     },
     {
@@ -163,7 +163,7 @@
         "stories": null,
         "parkingSpaces": null
       },
-      "lastUpdated": "2026-09-04T00:40:57.859Z",
+      "lastUpdated": "2026-09-04T01:09:23.643Z",
       "sourceUrl": "https://www.newtonma.gov/government/planning/development-projects",
       "links": [
         {
@@ -180,7 +180,7 @@
         "longitude": null,
         "source": null
       },
-      "lastSeen": "2026-09-04T00:40:57.859Z",
+      "lastSeen": "2026-09-04T01:09:23.643Z",
       "history": []
     },
     {
@@ -199,7 +199,7 @@
         "stories": null,
         "parkingSpaces": null
       },
-      "lastUpdated": "2026-09-04T00:40:57.859Z",
+      "lastUpdated": "2026-09-04T01:09:23.643Z",
       "sourceUrl": "https://www.newtonma.gov/government/planning/development-projects",
       "links": [
         {
@@ -216,7 +216,7 @@
         "longitude": null,
         "source": null
       },
-      "lastSeen": "2026-09-04T00:40:57.859Z",
+      "lastSeen": "2026-09-04T01:09:23.643Z",
       "history": []
     },
     {
@@ -235,7 +235,7 @@
         "stories": null,
         "parkingSpaces": null
       },
-      "lastUpdated": "2026-09-04T00:40:57.859Z",
+      "lastUpdated": "2026-09-04T01:09:23.643Z",
       "sourceUrl": "https://www.newtonma.gov/government/planning/development-projects",
       "links": [
         {
@@ -248,7 +248,7 @@
         "longitude": null,
         "source": null
       },
-      "lastSeen": "2026-09-04T00:40:57.859Z",
+      "lastSeen": "2026-09-04T01:09:23.643Z",
       "history": []
     },
     {
@@ -267,7 +267,7 @@
         "stories": 8,
         "parkingSpaces": null
       },
-      "lastUpdated": "2026-09-04T00:40:57.859Z",
+      "lastUpdated": "2026-09-04T01:09:23.643Z",
       "sourceUrl": "https://www.newtonma.gov/government/planning/development-projects",
       "links": [
         {
@@ -284,7 +284,7 @@
         "longitude": null,
         "source": null
       },
-      "lastSeen": "2026-09-04T00:40:57.859Z",
+      "lastSeen": "2026-09-04T01:09:23.643Z",
       "history": []
     },
     {
@@ -303,7 +303,7 @@
         "stories": null,
         "parkingSpaces": null
       },
-      "lastUpdated": "2026-09-04T00:40:57.859Z",
+      "lastUpdated": "2026-09-04T01:09:23.643Z",
       "sourceUrl": "https://www.newtonma.gov/government/planning/development-projects",
       "links": [
         {
@@ -316,7 +316,7 @@
         "longitude": null,
         "source": null
       },
-      "lastSeen": "2026-09-04T00:40:57.859Z",
+      "lastSeen": "2026-09-04T01:09:23.643Z",
       "history": []
     },
     {
@@ -335,7 +335,7 @@
         "stories": 4,
         "parkingSpaces": null
       },
-      "lastUpdated": "2026-09-04T00:40:57.859Z",
+      "lastUpdated": "2026-09-04T01:09:23.643Z",
       "sourceUrl": "https://www.newtonma.gov/government/planning/development-projects",
       "links": [
         {
@@ -348,7 +348,7 @@
         "longitude": null,
         "source": null
       },
-      "lastSeen": "2026-09-04T00:40:57.859Z",
+      "lastSeen": "2026-09-04T01:09:23.643Z",
       "history": []
     },
     {
@@ -367,7 +367,7 @@
         "stories": 3,
         "parkingSpaces": null
       },
-      "lastUpdated": "2026-09-04T00:40:57.859Z",
+      "lastUpdated": "2026-09-04T01:09:23.643Z",
       "sourceUrl": "https://www.newtonma.gov/government/planning/development-projects",
       "links": [
         {
@@ -384,7 +384,7 @@
         "longitude": null,
         "source": null
       },
-      "lastSeen": "2026-09-04T00:40:57.859Z",
+      "lastSeen": "2026-09-04T01:09:23.643Z",
       "history": []
     },
     {
@@ -403,7 +403,7 @@
         "stories": null,
         "parkingSpaces": null
       },
-      "lastUpdated": "2026-09-04T00:40:57.859Z",
+      "lastUpdated": "2026-09-04T01:09:23.643Z",
       "sourceUrl": "https://www.newtonma.gov/government/planning/development-projects",
       "links": [
         {
@@ -420,7 +420,7 @@
         "longitude": null,
         "source": null
       },
-      "lastSeen": "2026-09-04T00:40:57.859Z",
+      "lastSeen": "2026-09-04T01:09:23.643Z",
       "history": []
     },
     {
@@ -439,7 +439,7 @@
         "stories": null,
         "parkingSpaces": null
       },
-      "lastUpdated": "2026-09-04T00:40:57.859Z",
+      "lastUpdated": "2026-09-04T01:09:23.643Z",
       "sourceUrl": "https://www.newtonma.gov/government/planning/development-projects",
       "links": [
         {
@@ -452,7 +452,7 @@
         "longitude": null,
         "source": null
       },
-      "lastSeen": "2026-09-04T00:40:57.859Z",
+      "lastSeen": "2026-09-04T01:09:23.643Z",
       "history": []
     }
   ]
