@@ -46,6 +46,9 @@ jobs:
       - name: Validate public-facing copy
         run: npm run validate:copy
 
+      - name: Validate data integrity
+        run: npm run validate:data
+
       - name: Check generated data
         run: |
           node -e "
