@@ -2,10 +2,24 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import ProjectStatusBadge from "../../components/ProjectStatusBadge";
 import { allProjects } from "../../../data/project-catalog";
+import eventCollectionStatus from "../../../data/event-collection-status.json";
 import { projectEvents, type ProjectEvent } from "../../../data/project-events";
 
-function formatDate(date: string) { return new Date(`${date}T12:00:00`).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }); }
-function formatDateTime(date: string) { return new Date(date).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }); }
+function formatDate(date: string) {
+  return new Date(`${date}T12:00:00`).toLocaleDateString("en-US", {
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
+function formatDateTime(date: string) {
+  return new Date(date).toLocaleDateString("en-US", {
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  });
+}
 
 function getStatusDescription(status: string) {
   switch (status) {
@@ -57,8 +71,23 @@ function getCurrentStageIndex(type: string, status: string) {
   }
 }
 
-function getEventTypeLabel(type: ProjectEvent["type"]) { switch (type) { case "Hearing": return "Public hearing"; case "Meeting": return "Meeting"; case "Decision": return "Decision"; case "Application": return "Application"; case "Notice": return "Notice"; case "Construction": return "Construction"; default: return "Project event"; } }
-function sortEvents(events: ProjectEvent[]) { return [...events].sort((a, b) => new Date(`${a.date}T12:00:00`).getTime() - new Date(`${b.date}T12:00:00`).getTime()); }
+function getEventTypeLabel(type: ProjectEvent["type"]) {
+  switch (type) {
+    case "Hearing": return "Public hearing";
+    case "Meeting": return "Meeting";
+    case "Decision": return "Decision";
+    case "Application": return "Application";
+    case "Notice": return "Notice";
+    case "Construction": return "Construction";
+    default: return "Project event";
+  }
+}
+
+function sortEvents(events: ProjectEvent[]) {
+  return [...events].sort(
+    (a, b) => new Date(`${a.date}T12:00:00`).getTime() - new Date(`${b.date}T12:00:00`).getTime()
+  );
+}
 
 export default async function ProjectPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
@@ -72,9 +101,11 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
   const upcomingEvents = events.filter((event) => new Date(`${event.date}T23:59:59`) >= now);
   const pastEvents = events.filter((event) => new Date(`${event.date}T23:59:59`) < now);
   const nextOpportunity = upcomingEvents.find((event) => Boolean(event.participationUrl)) ?? null;
-  const isPrivateDevelopment = ["Housing", "Mixed-Use", "Commercial"].includes(project.type);
   const isPublicProject = project.type === "Public Building" || project.type === "Transportation";
   const highlights = project.highlights ?? [];
+  const successfulEventSources = Number(eventCollectionStatus.successfulSources ?? 0);
+  const failedEventSources = Number(eventCollectionStatus.failedSources ?? 0);
+  const eventCheckDate = eventCollectionStatus.checkedAt;
 
   return (
     <main className="min-h-screen bg-slate-50 text-slate-950">
@@ -86,7 +117,7 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
           <h1 className="mt-5 max-w-4xl text-4xl font-bold tracking-[-0.03em] md:text-5xl">{project.name}</h1>
           <p className="mt-5 max-w-3xl text-lg leading-8 text-slate-600">{project.description}</p>
           {project.address && <p className="mt-4 text-sm font-medium text-slate-700">{project.address}</p>}
-          <p className="mt-5 text-sm text-slate-500">Last checked {formatDateTime(project.lastUpdated)}</p>
+          <p className="mt-5 text-sm text-slate-500">Source data checked {formatDateTime(project.lastUpdated)}</p>
         </header>
 
         <section className="mt-8 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
@@ -96,9 +127,7 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
 
         {highlights.length > 0 && <section className="mt-10"><p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">{isPublicProject ? "Verified project facts" : "Verified development facts"}</p><h2 className="mt-2 text-3xl font-bold tracking-tight">At a glance</h2><div className={`mt-6 grid gap-4 ${highlights.length === 1 ? "max-w-sm" : highlights.length === 2 ? "sm:grid-cols-2" : highlights.length === 3 ? "sm:grid-cols-2 lg:grid-cols-3" : "sm:grid-cols-2 lg:grid-cols-4"}`}>{highlights.map((fact) => <div key={`${fact.label}-${fact.value}`} className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"><p className="text-sm font-medium text-slate-500">{fact.label}</p><p className="mt-2 text-xl font-bold leading-tight">{fact.value}</p><a href={fact.sourceUrl} target="_blank" rel="noopener noreferrer" className="mt-4 inline-flex text-xs font-semibold text-slate-600 underline underline-offset-4">Source ↗</a></div>)}</div></section>}
 
-
-
-        <section className="mt-10"><div><p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Next opportunity</p><h2 className="mt-2 text-3xl font-bold tracking-tight">Participate in the process</h2><p className="mt-3 max-w-2xl leading-7 text-slate-600">Upcoming public opportunities are shown when an official City record connects them to this project.</p></div>{nextOpportunity ? <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"><div className="flex flex-wrap items-center gap-2"><span className="rounded-full bg-slate-900 px-3 py-1 text-sm font-semibold text-white">{getEventTypeLabel(nextOpportunity.type)}</span><span className="text-sm font-medium text-slate-500">{formatDate(nextOpportunity.date)}</span></div><h3 className="mt-4 text-2xl font-bold tracking-tight">{nextOpportunity.title}</h3><p className="mt-3 max-w-2xl leading-7 text-slate-600">{nextOpportunity.description}</p><div className="mt-6 flex flex-col gap-3 sm:flex-row">{nextOpportunity.participationUrl && <a href={nextOpportunity.participationUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center justify-center rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-700">Participation information <span aria-hidden="true" className="ml-2">↗</span></a>}<a href={nextOpportunity.sourceUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-900 hover:bg-slate-100">Official record <span aria-hidden="true" className="ml-2">↗</span></a></div></div> : <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"><h3 className="text-xl font-bold">No verified upcoming opportunity</h3><p className="mt-2 max-w-2xl leading-7 text-slate-600">No upcoming public meeting, hearing, or other participation opportunity is currently connected to this project by an official City record.</p><a href="https://www.newtonma.gov/government/city-clerk/city-council/calendar-news/calendar" target="_blank" rel="noopener noreferrer" className="mt-5 inline-flex items-center text-sm font-semibold underline underline-offset-4">Check the City calendar <span aria-hidden="true" className="ml-2">↗</span></a></div>}</section>
+        <section className="mt-10"><div><p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Next opportunity</p><h2 className="mt-2 text-3xl font-bold tracking-tight">Participate in the process</h2><p className="mt-3 max-w-2xl leading-7 text-slate-600">Upcoming public opportunities are shown when an official City record connects them to this project.</p></div>{nextOpportunity ? <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"><div className="flex flex-wrap items-center gap-2"><span className="rounded-full bg-slate-900 px-3 py-1 text-sm font-semibold text-white">{getEventTypeLabel(nextOpportunity.type)}</span><span className="text-sm font-medium text-slate-500">{formatDate(nextOpportunity.date)}</span></div><h3 className="mt-4 text-2xl font-bold tracking-tight">{nextOpportunity.title}</h3><p className="mt-3 max-w-2xl leading-7 text-slate-600">{nextOpportunity.description}</p><div className="mt-6 flex flex-col gap-3 sm:flex-row">{nextOpportunity.participationUrl && <a href={nextOpportunity.participationUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center justify-center rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-700">Participation information <span aria-hidden="true" className="ml-2">↗</span></a>}<a href={nextOpportunity.sourceUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-900 hover:bg-slate-100">Official record <span aria-hidden="true" className="ml-2">↗</span></a></div></div> : <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"><h3 className="text-xl font-bold">{successfulEventSources > 0 ? "No upcoming project-specific activity found" : "Upcoming activity data is not available yet"}</h3><p className="mt-2 max-w-2xl leading-7 text-slate-600">{successfulEventSources > 0 ? `No upcoming project-specific public meeting, hearing, or notice was identified in the official records checked by Newton Development${eventCheckDate ? ` as of ${formatDateTime(eventCheckDate)}` : ""}.` : "The official event sources have not yet completed a successful check. Check the City calendar for current meeting information."}</p>{failedEventSources > 0 && successfulEventSources > 0 && <p className="mt-3 max-w-2xl text-sm leading-6 text-amber-800">Some official event sources could not be checked during the latest update, so this does not represent a complete City-wide absence of upcoming activity.</p>}<a href="https://www.newtonma.gov/government/city-clerk/city-council/calendar-news/calendar" target="_blank" rel="noopener noreferrer" className="mt-5 inline-flex items-center text-sm font-semibold underline underline-offset-4">Check the City calendar <span aria-hidden="true" className="ml-2">↗</span></a></div>}</section>
 
         <section className="mt-10">
           <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Project progress</p>
@@ -111,20 +140,8 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
                 const isFuture = !isCompleted && !isCurrent;
                 return (
                   <li key={stage} className="relative pl-8 pb-8 last:pb-0">
-                    <span
-                      className={`absolute -left-[13px] top-0 flex h-6 w-6 items-center justify-center rounded-full border-2 bg-white shadow-sm ${isCurrent ? "border-slate-900 ring-4 ring-slate-200" : isCompleted ? "border-slate-900 bg-slate-900" : "border-slate-300"}`}
-                      aria-hidden="true"
-                    >
-                      {isCompleted ? <span className="text-[10px] font-bold text-white">✓</span> : isCurrent ? <span className="h-2 w-2 rounded-full bg-slate-900" /> : null}
-                    </span>
-                    <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-                      <div>
-                        <p className={`text-base font-semibold ${isCurrent ? "text-slate-950" : isCompleted ? "text-slate-700" : "text-slate-400"}`}>{stage}</p>
-                        {isCurrent && <p className="mt-1 text-sm font-medium text-slate-500">Current stage</p>}
-                        {isFuture && <p className="mt-1 text-sm text-slate-400">Not yet reached</p>}
-                      </div>
-                      {isCurrent && <span className="inline-flex w-fit rounded-full bg-slate-900 px-2.5 py-1 text-xs font-semibold text-white">Current stage</span>}
-                    </div>
+                    <span className={`absolute -left-[13px] top-0 flex h-6 w-6 items-center justify-center rounded-full border-2 bg-white shadow-sm ${isCurrent ? "border-slate-900 ring-4 ring-slate-200" : isCompleted ? "border-slate-900 bg-slate-900" : "border-slate-300"}`} aria-hidden="true">{isCompleted ? <span className="text-[10px] font-bold text-white">✓</span> : isCurrent ? <span className="h-2 w-2 rounded-full bg-slate-900" /> : null}</span>
+                    <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between"><div><p className={`text-base font-semibold ${isCurrent ? "text-slate-950" : isCompleted ? "text-slate-700" : "text-slate-400"}`}>{stage}</p>{isCurrent && <p className="mt-1 text-sm font-medium text-slate-500">Current stage</p>}{isFuture && <p className="mt-1 text-sm text-slate-400">Not yet reached</p>}</div>{isCurrent && <span className="inline-flex w-fit rounded-full bg-slate-900 px-2.5 py-1 text-xs font-semibold text-white">Current stage</span>}</div>
                   </li>
                 );
               })}
