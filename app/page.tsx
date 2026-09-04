@@ -30,7 +30,7 @@ export default async function HomePage() {
             <h1 className="mt-4 text-4xl font-bold tracking-[-0.03em] md:text-6xl">Track the projects changing Newton.</h1>
             <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-600">A structured public-information tracker for major development, public-building, and transportation projects — with links to the official records behind the information.</p>
             <div className="mt-8 flex flex-wrap gap-3">
-              <Link href="/map" className="inline-flex min-h-12 items-center gap-2 rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-700">Explore the project map <span aria-hidden="true">→</span></Link>
+              
               <Link href="/projects" className="inline-flex min-h-12 items-center rounded-xl border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-900 transition hover:bg-slate-50">Browse all projects</Link>
             </div>
           </div>
