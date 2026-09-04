@@ -18,6 +18,8 @@ type Project = {
   type?: string;
   village?: string;
   facts?: ProjectFacts;
+  estimatedCost?: number | null;
+  completionDate?: string | null;
 };
 
 type ProjectsClientProps = {
@@ -68,6 +70,11 @@ function formatNumber(value: number | null) {
   return value.toLocaleString();
 }
 
+function formatCost(value: number | null) {
+  if (value === null) return null;
+  return `$${value.toLocaleString()}`;
+}
+
 function getStatusDescription(status: string) {
   switch (status) {
     case "Under Construction":
@@ -92,6 +99,42 @@ function getStatusDescription(status: string) {
     default:
       return null;
   }
+}
+
+function getFactItems(project: Project) {
+  if (project.type === "Public Building") {
+    return [
+      project.estimatedCost != null
+        ? { label: "Estimated cost", value: formatCost(project.estimatedCost) }
+        : null,
+      project.completionDate
+        ? { label: "Completion", value: project.completionDate }
+        : null,
+    ].filter((item): item is { label: string; value: string | null } => item !== null);
+  }
+
+  if (
+    project.type === "Housing" ||
+    project.type === "Mixed-Use" ||
+    project.type === "Commercial"
+  ) {
+    return [
+      project.facts?.units != null
+        ? { label: "Units", value: formatNumber(project.facts.units) }
+        : null,
+      project.facts?.affordableUnits != null
+        ? { label: "Affordable", value: formatNumber(project.facts.affordableUnits) }
+        : null,
+      project.facts?.stories != null
+        ? { label: "Stories", value: formatNumber(project.facts.stories) }
+        : null,
+      project.facts?.parkingSpaces != null
+        ? { label: "Parking", value: formatNumber(project.facts.parkingSpaces) }
+        : null,
+    ].filter((item): item is { label: string; value: string | null } => item !== null);
+  }
+
+  return [];
 }
 
 export default function ProjectsClient({ projects }: ProjectsClientProps) {
@@ -239,13 +282,7 @@ export default function ProjectsClient({ projects }: ProjectsClientProps) {
       ) : (
         <section className="mt-8 grid gap-5 md:grid-cols-2">
           {filteredProjects.map((project) => {
-            const factItems = [
-              project.facts?.units != null ? { label: "Units", value: formatNumber(project.facts.units) } : null,
-              project.facts?.affordableUnits != null ? { label: "Affordable", value: formatNumber(project.facts.affordableUnits) } : null,
-              project.facts?.stories != null ? { label: "Stories", value: formatNumber(project.facts.stories) } : null,
-              project.facts?.parkingSpaces != null ? { label: "Parking", value: formatNumber(project.facts.parkingSpaces) } : null,
-            ].filter((item): item is { label: string; value: string | null } => item !== null);
-
+            const factItems = getFactItems(project);
             const statusDescription = getStatusDescription(project.status);
 
             return (
