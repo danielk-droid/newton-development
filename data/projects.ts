@@ -47,32 +47,17 @@ export type Project = {
 };
 
 function cleanText(value: string): string {
-  return value
-    .replace(/&nbsp;/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
+  return value.replace(/&nbsp;/g, " ").replace(/\s+/g, " ").trim();
 }
 
 function getVillage(name: string, fallbackVillage?: string): string {
   const villages = [
-    "Auburndale",
-    "Chestnut Hill",
-    "Newton Centre",
-    "Newton Corner",
-    "Newton Highlands",
-    "Newton Lower Falls",
-    "Newton Upper Falls",
-    "Newtonville",
-    "Nonantum",
-    "Oak Hill",
-    "Thompsonville",
-    "Waban",
-    "West Newton",
+    "Auburndale", "Chestnut Hill", "Newton Centre", "Newton Corner", "Newton Highlands",
+    "Newton Lower Falls", "Newton Upper Falls", "Newtonville", "Nonantum", "Oak Hill",
+    "Thompsonville", "Waban", "West Newton",
   ];
-
   const cleanedName = cleanText(name);
   const village = villages.find((item) => cleanedName.toLowerCase().includes(item.toLowerCase()));
-
   if (village) return village;
   if (fallbackVillage) return fallbackVillage;
   return "Unknown";
@@ -80,7 +65,6 @@ function getVillage(name: string, fallbackVillage?: string): string {
 
 function getAddress(name: string, fallbackAddress?: string): string {
   if (fallbackAddress) return cleanText(fallbackAddress);
-
   const cleanedName = cleanText(name);
   const parts = cleanedName.split(",");
   if (parts.length > 1) return parts.slice(0, -1).join(",").trim();
@@ -89,27 +73,15 @@ function getAddress(name: string, fallbackAddress?: string): string {
 
 function getProjectType(name: string, description: string): ProjectType {
   const text = `${name} ${description}`.toLowerCase();
-
-  if (text.includes("mixed use") || text.includes("mixed-use") || text.includes("retail") || text.includes("commercial space")) {
-    return "Mixed-Use";
-  }
-
-  if (text.includes("apartment") || text.includes("housing") || text.includes("residential") || text.includes("units") || text.includes("condominium")) {
-    return "Housing";
-  }
-
+  if (text.includes("mixed use") || text.includes("mixed-use") || text.includes("retail") || text.includes("commercial space")) return "Mixed-Use";
+  if (text.includes("apartment") || text.includes("housing") || text.includes("residential") || text.includes("units") || text.includes("condominium")) return "Housing";
   if (text.includes("zoning") || text.includes("overlay")) return "Zoning";
-
-  if (text.includes("station") || text.includes("transit") || text.includes("transportation")) {
-    return "Transportation";
-  }
-
+  if (text.includes("station") || text.includes("transit") || text.includes("transportation")) return "Transportation";
   return "Other";
 }
 
 function normalizeStatus(rawStatus: string): { status: ProjectStatus; label: string } {
   const status = cleanText(rawStatus).toLowerCase();
-
   if (status.includes("under construction")) return { status: "Under Construction", label: "Under Construction" };
   if (status.includes("complete") || status.includes("completed")) return { status: "Completed", label: "Completed" };
   if (status.includes("denied") && status.includes("appeal")) return { status: "Appealed", label: "Appealed" };
@@ -123,7 +95,6 @@ function normalizeStatus(rawStatus: string): { status: ProjectStatus; label: str
   if (status.includes("proposed")) return { status: "Proposed", label: "Proposed" };
   if (status.includes("withdrawn")) return { status: "Withdrawn", label: "Withdrawn" };
   if (status.includes("cancelled") || status.includes("canceled")) return { status: "Cancelled", label: "Cancelled" };
-
   return { status: "Unknown", label: cleanText(rawStatus) };
 }
 
@@ -138,11 +109,9 @@ function getHistory(project: {
   }>;
 }): ProjectEvent[] {
   if (!Array.isArray(project.history)) return [];
-
   return project.history.flatMap((event) => {
     const date = event.date ?? event.changedAt;
     if (!date) return [];
-
     return [{
       date,
       title: event.title ?? event.status ?? "Status update",
@@ -152,17 +121,12 @@ function getHistory(project: {
   });
 }
 
-function getSourceUrl(project: {
-  sourceUrl?: string;
-  links?: Array<{ label: string; url: string }>;
-}): string {
+function getSourceUrl(project: { sourceUrl?: string; links?: Array<{ label: string; url: string }> }): string {
   if (project.sourceUrl) return project.sourceUrl;
-
   const cityLink = project.links?.find((link) => {
     const label = link.label.toLowerCase();
     return label.includes("city") || label.includes("project");
   });
-
   return cityLink?.url ?? sourceData.source;
 }
 
@@ -179,7 +143,7 @@ export const projects: Project[] = sourceData.projects.map((project) => {
     status: normalized.status,
     type: getProjectType(cleanedName, cleanedDescription),
     description: cleanedDescription,
-    lastUpdated: new Date(sourceData.fetchedAt).toLocaleString(),
+    lastUpdated: sourceData.fetchedAt,
     sourceUrl: getSourceUrl(project),
     history: getHistory(project),
   };
