@@ -37,6 +37,9 @@ jobs:
       - name: Update Newton development data
         run: node scripts/update-newton-projects.mjs
 
+      - name: Expand official project event coverage
+        run: node scripts/update-newton-expanded-events.mjs
+
       - name: Validate verified project highlights
         run: node scripts/validate-project-highlights.mjs
 
@@ -48,14 +51,27 @@ jobs:
           node -e "
           const fs = require('fs');
           const data = JSON.parse(fs.readFileSync('data/newton-source.json', 'utf8'));
+          const eventStatus = JSON.parse(fs.readFileSync('data/event-collection-status.json', 'utf8'));
 
           if (!Array.isArray(data.projects) || data.projects.length === 0) {
             throw new Error('Newton project data is empty.');
           }
 
+          if (!Array.isArray(eventStatus.sources) || eventStatus.sources.length === 0) {
+            throw new Error('Event collection produced no source health records.');
+          }
+
+          if (eventStatus.successfulSources === 0) {
+            throw new Error('All official event sources failed. Refusing to publish a zero-coverage event check.');
+          }
+
           console.log('Projects found:', data.projects.length);
+          console.log('Event sources checked:', eventStatus.sources.length);
+          console.log('Event sources successful:', eventStatus.successfulSources);
+          console.log('Event sources failed:', eventStatus.failedSources);
           console.log('Data source:', data.source);
           console.log('Fetched at:', data.fetchedAt);
+          console.log('Event check:', eventStatus.checkedAt);
           "
 
       - name: Run lint
@@ -72,19 +88,19 @@ jobs:
       - name: Check for changes
         id: changes
         run: |
-          if git diff --quiet -- data/newton-source.json data/projects.ts data/project-events.ts; then
+          if git diff --quiet -- data/newton-source.json data/projects.ts data/project-events.ts data/event-collection-status.json; then
             echo "changed=false" >> "$GITHUB_OUTPUT"
             echo "No Newton Development data changes detected."
           else
             echo "changed=true" >> "$GITHUB_OUTPUT"
             echo "Changes detected."
-            git diff --stat -- data/newton-source.json data/projects.ts data/project-events.ts
+            git diff --stat -- data/newton-source.json data/projects.ts data/project-events.ts data/event-collection-status.json
           fi
 
       - name: Commit updated data
         if: steps.changes.outputs.changed == 'true'
         run: |
-          git add data/newton-source.json data/projects.ts data/project-events.ts
+          git add data/newton-source.json data/projects.ts data/project-events.ts data/event-collection-status.json
           git commit -m "Update Newton development data"
 
       - name: Sync with latest main
