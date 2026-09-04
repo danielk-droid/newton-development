@@ -85,9 +85,11 @@ export default function ProjectsPage() {
               <h2 className="text-2xl font-bold tracking-tight">Browse projects</h2>
               <p className="mt-1 text-sm text-slate-500">Search by project, address, village, type, status, or description.</p>
             </div>
-            <div className="flex flex-col items-start gap-3 sm:items-end">
-              <Link href="/map" className="inline-flex items-center justify-center rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-700">
-                Explore project map <span aria-hidden="true" className="ml-2">→</span>
+            <div className="flex w-full flex-col gap-3 sm:w-auto sm:items-end">
+              <Link href="/map" className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-700 sm:w-auto">
+                <span aria-hidden="true" className="text-base">⌖</span>
+                View interactive map
+                <span aria-hidden="true">→</span>
               </Link>
               <div className="text-sm text-slate-500">
                 Data checked <span className="font-medium text-slate-700">{new Date(latestChecked).toLocaleDateString()}</span>
