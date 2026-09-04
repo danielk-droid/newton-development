@@ -181,7 +181,7 @@ export default function MapClient({ projects }: Props) {
               <p className="mt-2 font-semibold leading-5 text-slate-950">{project.name}</p>
               <p className="mt-1 text-xs text-slate-500">{project.address}</p>
               <p className="mt-2 text-xs font-medium text-slate-600">{project.status}</p>
-              <span className="mt-3 inline-flex text-xs font-semibold text-slate-900 underline underline-offset-4">View project →</span>
+              <span className="mt-3 inline-flex text-xs font-semibold text-slate-900 underline underline-offset-4">Open project record →</span>
             </Link>
           ))}
         </div>
