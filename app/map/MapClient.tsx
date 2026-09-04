@@ -125,10 +125,11 @@ export default function MapClient({ projects }: Props) {
       const element = document.getElementById("newton-project-map");
       if (!element) return;
 
-      const existing = (element as HTMLElement & { _leaflet_id?: number })._leaflet_id;
-      if (existing) return;
+      const mapWindow = window as Window & { __newtonProjectMap?: { remove: () => void } };
+      mapWindow.__newtonProjectMap?.remove();
 
       const map = L.map(element, { scrollWheelZoom: true }).setView([42.337, -71.209], 12.2);
+      mapWindow.__newtonProjectMap = map;
       L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
         attribution: '&copy; OpenStreetMap contributors',
         maxZoom: 19,
