@@ -147,8 +147,7 @@ function isRelevantPdfTitle(title) {
 function detectType(title, pdfText, project) {
   const titleValue = normalize(title);
   if (/public hearing notice|hearing notice/.test(titleValue)) return "Notice";
-  const tokens = matchingTokens(pdfText, project);
-  if (hasNearbyPhrase(pdfText, tokens, [/public hearing/, /hearing scheduled/])) return "Hearing";
+  if (hasNearbyPhrase(pdfText, matchingTokens(pdfText, project), [/public hearing/, /hearing scheduled/])) return "Hearing";
   if (/\bagenda\b/.test(titleValue)) return "Meeting";
   return null;
 }
@@ -300,7 +299,7 @@ async function collectSource(source, projects) {
           description: type === "Hearing" ? `An official ${body} record identifies a public hearing concerning this project.` : type === "Notice" ? `An official ${body} notice concerns this project or its development review.` : `An official ${body} agenda includes this project.`,
           type,
           sourceUrl: link.href,
-          participationUrl: `${BASE_URL}/government/planning`,
+          participationUrl: source.url,
           verified: true,
         });
       }
