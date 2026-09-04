@@ -2,20 +2,10 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
+import ProjectStatusBadge from "../components/ProjectStatusBadge";
 
-type ProjectFact = {
-  label: string;
-  value: string;
-  sourceUrl?: string;
-};
-
-type ProjectFacts = {
-  units: number | null;
-  affordableUnits: number | null;
-  stories: number | null;
-  parkingSpaces: number | null;
-};
-
+type ProjectFact = { label: string; value: string; sourceUrl?: string };
+type ProjectFacts = { units: number | null; affordableUnits: number | null; stories: number | null; parkingSpaces: number | null };
 type Project = {
   id: string;
   name: string;
@@ -27,55 +17,23 @@ type Project = {
   highlights?: ProjectFact[];
   estimatedCost?: number | null;
   completionDate?: string | null;
+  lastUpdated: string;
 };
 
-type ProjectsClientProps = {
-  projects: Project[];
-};
+type ProjectsClientProps = { projects: Project[] };
 
-const statusOrder = [
-  "Under Construction",
-  "Approved",
-  "Approved with Conditions",
-  "Scheduled for Hearing",
-  "Under Review",
-  "Submitted",
-  "Proposed",
-  "Completed",
-  "Appealed",
-  "Denied",
-  "Withdrawn",
-  "Cancelled",
-  "Unknown",
-];
-
-function statusClasses(status: string) {
-  switch (status) {
-    case "Under Construction": return "bg-amber-100 text-amber-900";
-    case "Approved":
-    case "Approved with Conditions": return "bg-emerald-100 text-emerald-900";
-    case "Completed": return "bg-slate-200 text-slate-800";
-    case "Submitted":
-    case "Under Review":
-    case "Scheduled for Hearing": return "bg-blue-100 text-blue-900";
-    case "Appealed":
-    case "Denied":
-    case "Withdrawn":
-    case "Cancelled": return "bg-red-100 text-red-900";
-    default: return "bg-slate-100 text-slate-700";
-  }
-}
+const statusOrder = ["Under Construction", "Approved", "Approved with Conditions", "Scheduled for Hearing", "Under Review", "Submitted", "Proposed", "Completed", "Appealed", "Denied", "Withdrawn", "Cancelled", "Unknown"];
 
 function typeAccent(type?: string) {
   switch (type) {
-    case "Public Building": return "border-t-4 border-t-indigo-500";
-    case "Transportation": return "border-t-4 border-t-cyan-600";
+    case "Public Building": return "border-t-indigo-500";
+    case "Transportation": return "border-t-cyan-600";
     case "Housing":
     case "Mixed-Use":
-    case "Commercial": return "border-t-4 border-t-emerald-500";
-    case "Historic Preservation": return "border-t-4 border-t-amber-500";
-    case "Zoning": return "border-t-4 border-t-violet-500";
-    default: return "border-t-4 border-t-slate-400";
+    case "Commercial": return "border-t-emerald-500";
+    case "Historic Preservation": return "border-t-amber-500";
+    case "Zoning": return "border-t-violet-500";
+    default: return "border-t-slate-400";
   }
 }
 
@@ -92,9 +50,8 @@ function typeLabel(type?: string) {
   }
 }
 
-function formatNumber(value: number | null) {
-  return value === null ? null : value.toLocaleString();
-}
+function formatNumber(value: number | null) { return value === null ? null : value.toLocaleString(); }
+function formatUpdated(date: string) { return new Date(date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }); }
 
 function getStatusDescription(status: string) {
   switch (status) {
@@ -113,11 +70,8 @@ function getStatusDescription(status: string) {
 }
 
 function getFactItems(project: Project): ProjectFact[] {
-  if (project.highlights && project.highlights.length > 0) {
-    return project.highlights;
-  }
-
-  if (project.type === "Housing" || project.type === "Mixed-Use" || project.type === "Commercial") {
+  if (project.highlights && project.highlights.length > 0) return project.highlights;
+  if (["Housing", "Mixed-Use", "Commercial"].includes(project.type ?? "")) {
     return [
       project.facts?.units != null ? { label: "Units", value: formatNumber(project.facts.units)! } : null,
       project.facts?.affordableUnits != null ? { label: "Affordable", value: formatNumber(project.facts.affordableUnits)! } : null,
@@ -125,7 +79,6 @@ function getFactItems(project: Project): ProjectFact[] {
       project.facts?.parkingSpaces != null ? { label: "Parking", value: formatNumber(project.facts.parkingSpaces)! } : null,
     ].filter((item): item is ProjectFact => item !== null);
   }
-
   return [];
 }
 
@@ -168,45 +121,33 @@ export default function ProjectsClient({ projects }: ProjectsClientProps) {
 
   return (
     <div>
-      <section className="rounded-2xl border border-slate-200 bg-slate-50 p-5 md:p-6">
+      <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm md:p-6">
         <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_180px_180px_180px]">
-          <div><label htmlFor="project-search" className="text-sm font-semibold text-slate-900">Search</label><input id="project-search" type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Name, address, village, or keyword" className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-500 focus:ring-2 focus:ring-slate-200" /></div>
+          <div><label htmlFor="project-search" className="text-sm font-semibold text-slate-900">Search projects</label><input id="project-search" type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Name, address, village, or keyword" className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-500 focus:ring-2 focus:ring-slate-200" /></div>
           <div><label htmlFor="type-filter" className="text-sm font-semibold text-slate-900">Type</label><select id="type-filter" value={type} onChange={(event) => setType(event.target.value)} className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-slate-500 focus:ring-2 focus:ring-slate-200"><option value="All">All types</option>{types.map((item) => <option key={item} value={item}>{item}</option>)}</select></div>
           <div><label htmlFor="status-filter" className="text-sm font-semibold text-slate-900">Status</label><select id="status-filter" value={status} onChange={(event) => setStatus(event.target.value)} className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-slate-500 focus:ring-2 focus:ring-slate-200"><option value="All">All statuses</option>{statuses.map((item) => <option key={item} value={item}>{item}</option>)}</select></div>
           <div><label htmlFor="village-filter" className="text-sm font-semibold text-slate-900">Village</label><select id="village-filter" value={village} onChange={(event) => setVillage(event.target.value)} className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-slate-500 focus:ring-2 focus:ring-slate-200"><option value="All">All villages</option>{villages.map((item) => <option key={item} value={item}>{item}</option>)}</select></div>
         </div>
-        <div className="mt-5 flex flex-col gap-3 border-t border-slate-200 pt-5 sm:flex-row sm:items-center sm:justify-between"><p className="text-sm text-slate-600">Showing <span className="font-semibold text-slate-900">{filteredProjects.length}</span> of <span className="font-semibold text-slate-900">{projects.length}</span> projects</p>{hasFilters ? <button type="button" onClick={clearFilters} className="self-start text-sm font-semibold text-slate-700 underline underline-offset-4 hover:text-slate-950 sm:self-auto">Clear filters</button> : <p className="text-sm text-slate-500">Sorted by project status</p>}</div>
+        <div className="mt-5 flex flex-col gap-3 border-t border-slate-200 pt-5 sm:flex-row sm:items-center sm:justify-between"><p className="text-sm text-slate-600">Showing <span className="font-semibold text-slate-900">{filteredProjects.length}</span> of <span className="font-semibold text-slate-900">{projects.length}</span> projects</p>{hasFilters ? <button type="button" onClick={clearFilters} className="self-start text-sm font-semibold text-slate-700 underline underline-offset-4 hover:text-slate-950 sm:self-auto">Clear filters</button> : <p className="text-sm text-slate-500">Sorted by current status</p>}</div>
       </section>
 
       {filteredProjects.length === 0 ? (
-        <section className="mt-8 rounded-2xl border border-slate-200 p-10 text-center"><h2 className="text-xl font-semibold">No projects found</h2><p className="mt-2 text-slate-600">Try changing your search or filters.</p>{hasFilters && <button type="button" onClick={clearFilters} className="mt-5 rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-700">Clear filters</button>}</section>
+        <section className="mt-8 rounded-2xl border border-slate-200 bg-white p-10 text-center shadow-sm"><h2 className="text-xl font-semibold">No projects found</h2><p className="mt-2 text-slate-600">Try changing your search or filters.</p>{hasFilters && <button type="button" onClick={clearFilters} className="mt-5 rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-700">Clear filters</button>}</section>
       ) : (
-        <section className="mt-8 grid gap-5 md:grid-cols-2">
+        <section className="mt-6 grid gap-5 md:grid-cols-2">
           {filteredProjects.map((project) => {
             const factItems = getFactItems(project);
             const statusDescription = getStatusDescription(project.status);
             return (
-              <article key={project.id} className={`group flex flex-col rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition hover:border-slate-300 hover:shadow-md ${typeAccent(project.type)}`}>
-                <div className="flex flex-wrap items-center gap-2"><span className={`rounded-full px-3 py-1 text-sm font-semibold ${statusClasses(project.status)}`}>{project.status}</span>{project.type && <span className="rounded-full border border-slate-200 px-3 py-1 text-sm font-medium text-slate-600">{typeLabel(project.type)}</span>}{project.village && project.village !== "Unknown" && <span className="rounded-full border border-slate-200 px-3 py-1 text-sm font-medium text-slate-600">{project.village}</span>}</div>
+              <article key={project.id} className={`group flex flex-col rounded-2xl border border-slate-200 border-t-4 bg-white p-6 shadow-sm transition hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md ${typeAccent(project.type)}`}>
+                <div className="flex flex-wrap items-center gap-2"><ProjectStatusBadge status={project.status} size="sm" />{project.type && <span className="rounded-full border border-slate-200 px-2.5 py-1 text-xs font-semibold text-slate-600">{typeLabel(project.type)}</span>}{project.village && project.village !== "Unknown" && <span className="rounded-full border border-slate-200 px-2.5 py-1 text-xs font-semibold text-slate-600">{project.village}</span>}</div>
                 <h2 className="mt-5 text-2xl font-bold leading-tight tracking-tight">{project.name}</h2>
                 <p className="mt-3 line-clamp-4 leading-7 text-slate-600">{project.description}</p>
                 {statusDescription && <p className="mt-4 text-sm font-medium text-slate-500">{statusDescription}</p>}
 
-                {factItems.length > 0 && (
-                  <div className={`mt-5 rounded-xl border p-4 ${project.type === "Transportation" ? "border-cyan-100 bg-cyan-50/60" : project.type === "Public Building" ? "border-indigo-100 bg-indigo-50/60" : "border-slate-200 bg-slate-50"}`}>
-                    <p className={`text-xs font-semibold uppercase tracking-wide ${project.type === "Transportation" ? "text-cyan-800" : project.type === "Public Building" ? "text-indigo-700" : "text-slate-500"}`}>{project.type === "Transportation" ? "Key project details" : project.type === "Public Building" ? "Project at a glance" : "Key details"}</p>
-                    <div className="mt-3 grid grid-cols-2 gap-x-5 gap-y-4">
-                      {factItems.map((fact) => (
-                        <div key={`${fact.label}-${fact.value}`}>
-                          <p className="text-xs font-medium uppercase tracking-wide text-slate-500">{fact.label}</p>
-                          <p className="mt-1 text-sm font-semibold leading-5 text-slate-950">{fact.value}</p>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
+                {factItems.length > 0 && <div className={`mt-5 rounded-xl border p-4 ${project.type === "Transportation" ? "border-cyan-100 bg-cyan-50/60" : project.type === "Public Building" ? "border-indigo-100 bg-indigo-50/60" : "border-slate-200 bg-slate-50"}`}><p className={`text-xs font-semibold uppercase tracking-wide ${project.type === "Transportation" ? "text-cyan-800" : project.type === "Public Building" ? "text-indigo-700" : "text-slate-500"}`}>{project.type === "Transportation" ? "Key project details" : project.type === "Public Building" ? "Project at a glance" : "Key details"}</p><div className="mt-3 grid grid-cols-2 gap-x-5 gap-y-4">{factItems.map((fact) => <div key={`${fact.label}-${fact.value}`}><p className="text-xs font-medium uppercase tracking-wide text-slate-500">{fact.label}</p><p className="mt-1 text-sm font-semibold leading-5 text-slate-950">{fact.value}</p></div>)}</div></div>}
 
-                <div className="mt-auto pt-6"><Link href={`/projects/${project.id}`} className="inline-flex items-center rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-700">View project<span aria-hidden="true" className="ml-2">→</span></Link></div>
+                <div className="mt-auto flex flex-col gap-3 pt-6 sm:flex-row sm:items-end sm:justify-between"><Link href={`/projects/${project.id}`} className="inline-flex items-center justify-center rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-700">View project<span aria-hidden="true" className="ml-2">→</span></Link><p className="text-xs text-slate-400">Updated {formatUpdated(project.lastUpdated)}</p></div>
               </article>
             );
           })}
