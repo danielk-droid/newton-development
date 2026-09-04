@@ -40,6 +40,9 @@ jobs:
       - name: Validate verified project highlights
         run: node scripts/validate-project-highlights.mjs
 
+      - name: Validate public-facing copy
+        run: npm run validate:copy
+
       - name: Check generated data
         run: |
           node -e "
