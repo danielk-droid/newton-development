@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
-import { allProjects } from "../../../../data/project-catalog";
+import { allProjects } from "../../../data/project-catalog";
 
 const GIS_BASE = "https://gisweb.newtonma.gov/server/rest/services/Data/MapServer";
 const ADDRESS_LAYER = `${GIS_BASE}/12/query`;
 const FACILITY_LAYER = `${GIS_BASE}/13/query`;
 const STREET_LAYER = `${GIS_BASE}/15/query`;
 
-type LocationResult = {
+type GisFeature = { geometry?: { x?: number; y?: number; paths?: number[][][] }; attributes?: Record<string, string | number | null> };\ntype LocationResult = {
   id: string;
   lat: number;
   lon: number;
@@ -64,7 +64,7 @@ async function addressPoint(address: string) {
     `Number=${parsed.number} AND UPPER(StreetName)=UPPER('${quote(streetName)}') AND Status <> 'Inactive'`,
     "Number,NumberSuffix,StreetName,PostType,FullStName,Address,Status,LocationType",
   );
-  const feature = features.find((item: any) => Number.isFinite(item.geometry?.x) && Number.isFinite(item.geometry?.y));
+  const feature = features.find((item: GisFeature) => Number.isFinite(item.geometry?.x) && Number.isFinite(item.geometry?.y));
   if (!feature) return null;
   return {
     lat: Number(feature.geometry.y),
@@ -91,7 +91,7 @@ async function facilityPoint(name: string) {
 async function streetReference(name: string) {
   const normalized = normalize(name);
   const features = await gis(STREET_LAYER, `UPPER(NAME) LIKE UPPER('%${quote(normalized)}%')`, "NAME,OBJECTID");
-  const points = features.flatMap((feature: any) => feature.geometry?.paths?.flat() ?? []).filter((point: any) => Array.isArray(point) && point.length >= 2);
+  const points = features.flatMap((feature: GisFeature) => feature.geometry?.paths?.flat() ?? []).filter((point: number[]) => Array.isArray(point) && point.length >= 2);
   if (!points.length) return null;
   const lon = points.reduce((sum: number, point: number[]) => sum + Number(point[0]), 0) / points.length;
   const lat = points.reduce((sum: number, point: number[]) => sum + Number(point[1]), 0) / points.length;
