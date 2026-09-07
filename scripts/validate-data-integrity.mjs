@@ -17,7 +17,16 @@ const highlightsSource = await fs.readFile(highlightsPath, "utf8");
 const eventsSource = await fs.readFile(eventsPath, "utf8");
 const status = JSON.parse(await fs.readFile(statusPath, "utf8"));
 
-const allowedEventHosts = new Set(status.allowedHosts ?? ["www.newtonma.gov", "apps.newtonma.gov"]);
+const allowedEventHosts = new Set(["www.newtonma.gov", "apps.newtonma.gov"]);
+const allowedCatalogHosts = new Set([
+  "www.newtonma.gov",
+  "newtonma.gov",
+  "apps.newtonma.gov",
+  "newtonma.viewpointcloud.com",
+  "newtonma.portal.opengov.com",
+  "www.newton.k12.ma.us",
+  "newton.k12.ma.us",
+]);
 
 if (!Array.isArray(data.projects) || data.projects.length === 0) {
   throw new Error("Private development project data is empty.");
@@ -53,6 +62,9 @@ for (const [label, value] of urlFields) {
   let parsed;
   try { parsed = new URL(value); } catch { throw new Error(`${label} is not a valid URL: ${value}`); }
   if (parsed.protocol !== "https:") throw new Error(`${label} must use HTTPS: ${value}`);
+  if (!allowedCatalogHosts.has(parsed.hostname.toLowerCase())) {
+    throw new Error(`${label} points outside approved authoritative hosts: ${value}`);
+  }
 }
 
 const highlightProjectIds = [...highlightsSource.matchAll(/^\s*"([^"]+)":\s*\[/gm)].map((match) => match[1]);
@@ -67,7 +79,11 @@ for (const block of eventBlocks) {
   const projectId = read("projectId");
   const date = read("date");
   const sourceUrl = read("sourceUrl");
+  const participationUrl = read("participationUrl");
+  const matchedAddress = read("matchedAddress");
+  const sourceCheckedAt = read("sourceCheckedAt");
   const id = read("id");
+  const type = read("type");
 
   if (!projectIds.has(projectId)) throw new Error(`Event ${id} references unknown project ${projectId}.`);
   if (!/^20\d{2}-\d{2}-\d{2}$/.test(date ?? "")) throw new Error(`Event ${id} has an invalid date.`);
@@ -84,8 +100,23 @@ for (const block of eventBlocks) {
     throw new Error(`Event ${id} points outside the approved City source hosts: ${sourceUrl}`);
   }
 
-  const key = `${projectId}|${date}|${read("type")}`;
-  if (seenEventKeys.has(key)) throw new Error(`Duplicate project event key: ${key}`);
+  if (participationUrl) {
+    let participation;
+    try { participation = new URL(participationUrl); } catch { throw new Error(`Event ${id} has an invalid participation URL.`); }
+    if (participation.protocol !== "https:") throw new Error(`Event ${id} participation URL must use HTTPS.`);
+    if (!allowedEventHosts.has(participation.hostname.toLowerCase())) {
+      throw new Error(`Event ${id} participation URL points outside the approved City source hosts: ${participationUrl}`);
+    }
+  }
+
+  if (sourceCheckedAt) {
+    const checked = new Date(sourceCheckedAt);
+    if (Number.isNaN(checked.getTime())) throw new Error(`Event ${id} has an invalid sourceCheckedAt timestamp.`);
+    if (!matchedAddress) throw new Error(`Event ${id} has a source check timestamp but no recorded project-match evidence.`);
+  }
+
+  const key = `${projectId}|${date}|${type}|${sourceUrl}`;
+  if (seenEventKeys.has(key)) throw new Error(`Duplicate project event record: ${key}`);
   seenEventKeys.add(key);
 }
 
@@ -97,11 +128,18 @@ if (status.sources.length !== 6) {
   throw new Error(`Expected 6 configured official event sources, found ${status.sources.length}.`);
 }
 
+if (!Array.isArray(status.allowedHosts) || status.allowedHosts.some((host) => !allowedEventHosts.has(host))) {
+  throw new Error("Event collector allowed-host configuration is not restricted to approved City hosts.");
+}
+
 for (const source of status.sources) {
   let parsed;
   try { parsed = new URL(source.url); } catch { throw new Error(`Event source ${source.name} has an invalid URL.`); }
-  if (!allowedEventHosts.has(parsed.hostname.toLowerCase())) {
+  if (parsed.protocol !== "https:" || !allowedEventHosts.has(parsed.hostname.toLowerCase())) {
     throw new Error(`Event source ${source.name} is outside the approved City source hosts: ${source.url}`);
+  }
+  if (!source.checkedAt || Number.isNaN(new Date(source.checkedAt).getTime())) {
+    throw new Error(`Event source ${source.name} has no valid check timestamp.`);
   }
 }
 
