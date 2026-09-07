@@ -77,7 +77,7 @@ async function addressPoint(address: string) {
 
 async function facilityPoint(name: string) {
   const features = await gis(FACILITY_LAYER, `UPPER(Name) LIKE UPPER('%${quote(name)}%')`, "Name,Type");
-  const feature = features.find((item: any) => Number.isFinite(item.geometry?.x) && Number.isFinite(item.geometry?.y));
+  const feature = features.find((item: GisFeature) => Number.isFinite(item.geometry?.x) && Number.isFinite(item.geometry?.y));
   if (!feature) return null;
   return {
     lat: Number(feature.geometry.y),
