@@ -62,13 +62,16 @@ jobs:
           const fs = require('fs');
           const data = JSON.parse(fs.readFileSync('data/newton-source.json', 'utf8'));
           const eventStatus = JSON.parse(fs.readFileSync('data/event-collection-status.json', 'utf8'));
-          const coordinates = JSON.parse(fs.readFileSync('data/project-coordinates.json', 'utf8'));\n          const coordinateStatus = JSON.parse(fs.readFileSync('data/coordinate-collection-status.json', 'utf8'));
+          const coordinates = JSON.parse(fs.readFileSync('data/project-coordinates.json', 'utf8'));
+          const coordinateStatus = JSON.parse(fs.readFileSync('data/coordinate-collection-status.json', 'utf8'));
 
           if (!Array.isArray(data.projects) || data.projects.length === 0) throw new Error('Newton project data is empty.');
           if (!Array.isArray(eventStatus.sources) || eventStatus.sources.length === 0) throw new Error('Event collection produced no source health records.');
           if (eventStatus.successfulSources === 0) throw new Error('All official event sources failed.');
           if (!coordinates.checkedAt || !Array.isArray(coordinates.projects)) throw new Error('Newton GIS coordinate data is missing.');
-          if (coordinates.projects.length === 0) throw new Error('No Newton GIS project coordinates were resolved.');\n          if (!Number.isInteger(coordinateStatus.totalProjects) || coordinateStatus.totalProjects <= 0) throw new Error('Coordinate status is malformed.');\n          if (coordinateStatus.resolvedProjects !== coordinates.projects.length) throw new Error('Coordinate status does not match generated GIS data.');
+          if (coordinates.projects.length === 0) throw new Error('No Newton GIS project coordinates were resolved.');
+          if (!Number.isInteger(coordinateStatus.totalProjects) || coordinateStatus.totalProjects <= 0) throw new Error('Coordinate status is malformed.');
+          if (coordinateStatus.resolvedProjects !== coordinates.projects.length) throw new Error('Coordinate status does not match generated GIS data.');
 
           console.log('Projects found:', data.projects.length);
           console.log('GIS coordinates:', coordinates.projects.length);
@@ -78,7 +81,9 @@ jobs:
           console.log('Data source:', data.source);
           console.log('Fetched at:', data.fetchedAt);
           console.log('Event check:', eventStatus.checkedAt);
-          console.log('GIS check:', coordinates.checkedAt);\n          console.log('GIS exact locations:', coordinateStatus.exactLocations);\n          console.log('GIS reference locations:', coordinateStatus.referenceLocations);
+          console.log('GIS check:', coordinates.checkedAt);
+          console.log('GIS exact locations:', coordinateStatus.exactLocations);
+          console.log('GIS reference locations:', coordinateStatus.referenceLocations);
           "
 
       - name: Run lint
