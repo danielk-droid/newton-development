@@ -10,6 +10,7 @@ const highlightsPath = path.join(ROOT, "data", "project-highlights.ts");
 const eventsPath = path.join(ROOT, "data", "project-events.ts");
 const statusPath = path.join(ROOT, "data", "event-collection-status.json");
 const coordinatesPath = path.join(ROOT, "data", "project-coordinates.json");
+const coordinateStatusPath = path.join(ROOT, "data", "coordinate-collection-status.json");
 
 const data = JSON.parse(await fs.readFile(sourcePath, "utf8"));
 const publicProjectsSource = await fs.readFile(publicProjectsPath, "utf8");
@@ -18,6 +19,7 @@ const highlightsSource = await fs.readFile(highlightsPath, "utf8");
 const eventsSource = await fs.readFile(eventsPath, "utf8");
 const status = JSON.parse(await fs.readFile(statusPath, "utf8"));
 const coordinates = JSON.parse(await fs.readFile(coordinatesPath, "utf8"));
+const coordinateStatus = JSON.parse(await fs.readFile(coordinateStatusPath, "utf8"));
 
 const allowedEventHosts = new Set(["www.newtonma.gov", "apps.newtonma.gov"]);
 const allowedCatalogHosts = new Set(["www.newtonma.gov", "newtonma.gov", "apps.newtonma.gov", "newtonma.viewpointcloud.com", "newtonma.portal.opengov.com", "www.newton.k12.ma.us", "newton.k12.ma.us"]);
@@ -91,10 +93,14 @@ for (const point of coordinates.projects) {
   if (!Number.isFinite(point.lat) || !Number.isFinite(point.lon) || point.lat < 42.1 || point.lat > 42.5 || point.lon < -71.4 || point.lon > -70.9) throw new Error(`GIS coordinate for ${point.id} is outside the Newton validation bounds.`);
   if (!point.method || !point.matchedAddress) throw new Error(`GIS coordinate for ${point.id} lacks matching provenance.`);
 }
+if (!coordinateStatus.checkedAt || Number.isNaN(new Date(coordinateStatus.checkedAt).getTime())) throw new Error("GIS coordinate status has no valid checkedAt timestamp.");
+if (coordinateStatus.resolvedProjects !== coordinates.projects.length) throw new Error("GIS coordinate status does not match generated coordinates.");
+if (!Number.isInteger(coordinateStatus.totalProjects) || coordinateStatus.totalProjects <= 0) throw new Error("GIS coordinate status has an invalid project count.");
+if (coordinateStatus.exactLocations + coordinateStatus.referenceLocations !== coordinateStatus.resolvedProjects) throw new Error("GIS coordinate status location counts do not reconcile.");
 if (!String(coordinates.source ?? "").includes("gisweb.newtonma.gov")) throw new Error("GIS coordinate source is not the official Newton GIS host.");
 for (const match of String(coordinates.source ?? "").matchAll(/https:\/\/([^/\s]+)/g)) if (!allowedCoordinateHosts.has(match[1].toLowerCase())) throw new Error(`GIS coordinate source uses an unapproved host: ${match[1]}`);
 
 console.log(`Validated ${projectIds.size} catalog projects, ${highlightProjectIds.length} highlighted projects, ${eventBlocks.length} events, ${coordinates.projects.length} GIS coordinates, and ${urlFields.length} source URLs.`);
 console.log(`Approved event hosts: ${[...allowedEventHosts].join(", ")}`);
 console.log(`Event source health: ${status.successfulSources} successful, ${status.failedSources} failed.`);
-console.log(`GIS coordinates: ${coordinates.projects.length} resolved.`);
+console.log(`GIS coordinates: ${coordinates.projects.length} resolved (${coordinateStatus.exactLocations} exact, ${coordinateStatus.referenceLocations} reference).`);
