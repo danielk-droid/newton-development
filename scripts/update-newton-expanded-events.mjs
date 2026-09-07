@@ -10,7 +10,10 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const ROOT = path.resolve(__dirname, "..");
 const BASE_URL = "https://www.newtonma.gov";
+const ALLOWED_HOSTS = new Set(["www.newtonma.gov", "apps.newtonma.gov"]);
 const PROJECT_DATA_PATH = path.join(ROOT, "data", "newton-source.json");
+const PUBLIC_PROJECT_DATA_PATH = path.join(ROOT, "data", "public-projects.ts");
+const TRANSPORTATION_PROJECT_DATA_PATH = path.join(ROOT, "data", "transportation-projects.ts");
 const EVENTS_PATH = path.join(ROOT, "data", "project-events.ts");
 const STATUS_PATH = path.join(ROOT, "data", "event-collection-status.json");
 
@@ -60,12 +63,23 @@ function absoluteUrl(value) {
   try { return new URL(value, BASE_URL).href; } catch { return null; }
 }
 
-function isPdf(url) {
-  return /\.pdf(?:[?#]|$)/i.test(url) || /showpublisheddocument/i.test(url);
+function isAllowedCityUrl(url) {
+  try {
+    const parsed = new URL(url);
+    return parsed.protocol === "https:" && ALLOWED_HOSTS.has(parsed.hostname.toLowerCase());
+  } catch {
+    return false;
+  }
 }
 
-function isNewtonPage(url) {
-  try { return new URL(url).hostname === "www.newtonma.gov"; } catch { return false; }
+function assertAllowedCityUrl(url) {
+  if (!isAllowedCityUrl(url)) {
+    throw new Error(`Blocked non-City source URL: ${url}`);
+  }
+}
+
+function isPdf(url) {
+  return /\.pdf(?:[?#]|$)/i.test(url) || /showpublisheddocument/i.test(url);
 }
 
 function extractLinks(html) {
@@ -109,27 +123,30 @@ function parseDate(text) {
 
 function addressTokens(project) {
   const tokens = new Set();
-  for (const value of [project.address, project.name]) {
-    for (const match of normalize(value).matchAll(/\b(\d{1,4}(?:-\d{1,4})?)\s+([a-z][a-z'-]+)\b/g)) {
+  for (const value of [project.address]) {
+    const normalized = normalize(value);
+    for (const match of normalized.matchAll(/\b(\d{1,4}(?:-\d{1,4})?)\s+([a-z][a-z'-]+(?:\s+[a-z][a-z'-]+)?)\b/g)) {
       tokens.add(`${match[1]} ${match[2]}`);
     }
+    const streetOnly = normalized.match(/\b([a-z][a-z'-]+\s+(?:street|road|avenue|drive|parkway|place|way|lane|court|circle|terrace|boulevard)\b)/i);
+    if (streetOnly) tokens.add(streetOnly[1]);
   }
-  return [...tokens];
+  return [...tokens].filter((token) => !/^(citywide|newton,? ma|newton)$/i.test(token));
 }
 
 function matchingTokens(text, project) {
   const normalized = normalize(text);
   return addressTokens(project).filter((token) => {
-    const pattern = new RegExp(`\\b${token.replace(/[-]/g, "[-\\s]?")}\\b`, "i");
-    return pattern.test(normalized);
+    const escaped = token.replace(/[.*+?^${}()|[\]\\]/g, "\\$&").replace(/[-]/g, "[-\\s]?");
+    return new RegExp(`\\b${escaped}\\b`, "i").test(normalized);
   });
 }
 
 function hasNearbyPhrase(text, tokens, phrases, window = 1200) {
   const normalized = normalize(text);
   for (const token of tokens) {
-    const pattern = new RegExp(`\\b${token.replace(/[-]/g, "[-\\s]?")}\\b`, "i");
-    const match = pattern.exec(normalized);
+    const escaped = token.replace(/[.*+?^${}()|[\]\\]/g, "\\$&").replace(/[-]/g, "[-\\s]?");
+    const match = new RegExp(`\\b${escaped}\\b`, "i").exec(normalized);
     if (!match) continue;
     const start = Math.max(0, match.index - window);
     const end = Math.min(normalized.length, match.index + match[0].length + window);
@@ -184,6 +201,27 @@ function parseExistingEvents(source) {
   return events;
 }
 
+function parseCatalogProjects(source) {
+  const projects = [];
+  const objectRegex = /\{\s*id:\s*"([^"]+)"[\s\S]*?\n\s*\},/g;
+  for (const match of source.matchAll(objectRegex)) {
+    const block = match[0];
+    const id = match[1];
+    const name = block.match(/\n\s*name:\s*"([^"]+)"/)?.[1];
+    const address = block.match(/\n\s*address:\s*"([^"]+)"/)?.[1];
+    if (id && name && address) projects.push({ id, name, address });
+  }
+  return projects;
+}
+
+function mergeProjects(...groups) {
+  const map = new Map();
+  for (const project of groups.flat()) {
+    if (project?.id && project?.name && project?.address) map.set(project.id, project);
+  }
+  return [...map.values()];
+}
+
 function serializeEvents(events) {
   const lines = [
     'export type ProjectEventType =',
@@ -228,14 +266,18 @@ function serializeEvents(events) {
 }
 
 async function fetchText(url) {
+  assertAllowedCityUrl(url);
   const response = await fetch(url, { headers: { "User-Agent": "Newton Development public-information collector" } });
   if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  assertAllowedCityUrl(response.url);
   return response.text();
 }
 
 async function fetchPdfText(url) {
+  assertAllowedCityUrl(url);
   const response = await fetch(url, { headers: { "User-Agent": "Newton Development public-information collector" } });
   if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  assertAllowedCityUrl(response.url);
   const parser = new PDFParse({ data: Buffer.from(await response.arrayBuffer()) });
   try {
     const result = await parser.getText();
@@ -246,12 +288,13 @@ async function fetchPdfText(url) {
 }
 
 async function collectSource(source, projects) {
+  assertAllowedCityUrl(source.url);
   const firstPage = await fetchText(source.url);
   const pages = [{ url: source.url, html: firstPage }];
   const firstLinks = extractLinks(firstPage);
 
   const childPages = firstLinks.filter((link) =>
-    isNewtonPage(link.href) &&
+    isAllowedCityUrl(link.href) &&
     !isPdf(link.href) &&
     RELEVANT_PAGE_PATTERNS.some((pattern) => pattern.test(`${link.title} ${link.text}`))
   );
@@ -268,7 +311,7 @@ async function collectSource(source, projects) {
   const pdfLinks = [];
   for (const page of pages) {
     for (const link of extractLinks(page.html)) {
-      if (!isPdf(link.href) || !isRelevantPdfTitle(link.title || link.text)) continue;
+      if (!isAllowedCityUrl(link.href) || !isPdf(link.href) || !isRelevantPdfTitle(link.title || link.text)) continue;
       pdfLinks.push(link);
     }
   }
@@ -296,10 +339,10 @@ async function collectSource(source, projects) {
           projectId: project.id,
           date,
           title: type === "Hearing" ? `${body} hearing — ${project.name}` : type === "Notice" ? `${body} notice — ${project.name}` : `${body} meeting — ${project.name}`,
-          description: type === "Hearing" ? `An official ${body} record identifies a public hearing concerning this project.` : type === "Notice" ? `An official ${body} notice concerns this project or its development review.` : `An official ${body} agenda includes this project.`,
+          description: type === "Hearing" ? `An official ${body} record identifies a public hearing concerning this project address.` : type === "Notice" ? `An official ${body} notice concerns this project address or its review.` : `An official ${body} agenda includes this project address.`,
           type,
           sourceUrl: link.href,
-          participationUrl: source.url,
+          participationUrl: link.href,
           verified: true,
         });
       }
@@ -323,8 +366,13 @@ function dedupe(events) {
 
 async function main() {
   const projectData = JSON.parse(await fs.readFile(PROJECT_DATA_PATH, "utf8"));
-  const projects = projectData.projects ?? [];
-  if (!projects.length) throw new Error("Newton project data is empty.");
+  const publicProjectSource = await fs.readFile(PUBLIC_PROJECT_DATA_PATH, "utf8");
+  const transportationProjectSource = await fs.readFile(TRANSPORTATION_PROJECT_DATA_PATH, "utf8");
+  const privateProjects = projectData.projects ?? [];
+  const publicProjects = parseCatalogProjects(publicProjectSource);
+  const transportationProjects = parseCatalogProjects(transportationProjectSource);
+  const projects = mergeProjects(privateProjects, publicProjects, transportationProjects);
+  if (!projects.length) throw new Error("Newton project catalog is empty.");
 
   const existing = parseExistingEvents(await fs.readFile(EVENTS_PATH, "utf8"));
   const discovered = [];
@@ -342,17 +390,23 @@ async function main() {
     }
   }
 
+  if (sourceResults.length !== SOURCES.length) throw new Error("Event source health record count does not match configured sources.");
+  if (sourceResults.every((source) => !source.ok)) throw new Error("All official Newton event sources failed; refusing to publish refreshed event data.");
+
   const combined = dedupe([...existing, ...discovered]);
   await fs.writeFile(EVENTS_PATH, serializeEvents(combined), "utf8");
 
   const status = {
     checkedAt: new Date().toISOString(),
+    allowedHosts: [...ALLOWED_HOSTS],
+    catalogProjectsChecked: projects.length,
     sources: sourceResults,
     successfulSources: sourceResults.filter((source) => source.ok).length,
     failedSources: sourceResults.filter((source) => !source.ok).length,
   };
   await fs.writeFile(STATUS_PATH, `${JSON.stringify(status, null, 2)}\n`, "utf8");
 
+  console.log(`Checked ${projects.length} catalog projects.`);
   console.log(`Saved ${combined.length} verified project events.`);
   console.log(`New events from expanded sources: ${discovered.length}.`);
 }
