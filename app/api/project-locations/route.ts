@@ -6,7 +6,8 @@ const ADDRESS_LAYER = `${GIS_BASE}/12/query`;
 const FACILITY_LAYER = `${GIS_BASE}/13/query`;
 const STREET_LAYER = `${GIS_BASE}/15/query`;
 
-type GisFeature = { geometry?: { x?: number; y?: number; paths?: number[][][] }; attributes?: Record<string, string | number | null> };\ntype LocationResult = {
+type GisFeature = { geometry?: { x?: number; y?: number; paths?: number[][][] }; attributes?: Record<string, string | number | null> };
+type LocationResult = {
   id: string;
   lat: number;
   lon: number;
