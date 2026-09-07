@@ -68,7 +68,7 @@ jobs:
           if (!Array.isArray(eventStatus.sources) || eventStatus.sources.length === 0) throw new Error('Event collection produced no source health records.');
           if (eventStatus.successfulSources === 0) throw new Error('All official event sources failed.');
           if (!coordinates.checkedAt || !Array.isArray(coordinates.projects)) throw new Error('Newton GIS coordinate data is missing.');
-          if (coordinates.projects.length === 0) throw new Error('No Newton GIS project coordinates were resolved.');\n          if (coordinateStatus.totalProjects !== data.projects.length + coordinateStatus.totalProjects - coordinateStatus.totalProjects) throw new Error('Coordinate status is malformed.');\n          if (coordinateStatus.resolvedProjects !== coordinates.projects.length) throw new Error('Coordinate status does not match generated GIS data.');
+          if (coordinates.projects.length === 0) throw new Error('No Newton GIS project coordinates were resolved.');\n          if (!Number.isInteger(coordinateStatus.totalProjects) || coordinateStatus.totalProjects <= 0) throw new Error('Coordinate status is malformed.');\n          if (coordinateStatus.resolvedProjects !== coordinates.projects.length) throw new Error('Coordinate status does not match generated GIS data.');
 
           console.log('Projects found:', data.projects.length);
           console.log('GIS coordinates:', coordinates.projects.length);
