@@ -15,13 +15,12 @@ declare global { interface Window { L?: Leaflet; __newtonProjectMap?: MapInstanc
 
 function typeLabel(type?: string) { if (type === "Public Building") return "Public building"; if (type === "Transportation") return "Transportation"; if (type === "Housing") return "Housing"; if (type === "Mixed-Use") return "Mixed-use"; if (type === "Commercial") return "Commercial"; if (type === "Historic Preservation") return "Historic preservation"; if (type === "Zoning") return "Zoning"; return type ?? "Project"; }
 function markerClass(type?: string) { if (type === "Public Building") return "bg-indigo-600"; if (type === "Transportation") return "bg-cyan-600"; if (type === "Housing" || type === "Mixed-Use" || type === "Commercial") return "bg-emerald-600"; return "bg-slate-700"; }
-function markerIcon(type?: string) {
-  const color = type === "Transportation" ? "#0891b2" : type === "Public Building" ? "#4f46e5" : type === "Housing" || type === "Mixed-Use" || type === "Commercial" ? "#059669" : "#334155";
-  const icon = type === "Housing" || type === "Mixed-Use" ? '<path d="M4 10.5 12 4l8 6.5"/><path d="M6.5 9.5V20h11V9.5"/><path d="M10 20v-5h4v5"/>' : type === "Commercial" ? '<path d="M4 10h16l-1.5-5h-13L4 10Z"/><path d="M5 10v10h14V10"/><path d="M9 20v-5h6v5"/>' : type === "Public Building" ? '<path d="M3 20h18"/><path d="M5 20V9h14v11"/><path d="M4 9 12 4l8 5"/>' : type === "Transportation" ? '<path d="M5 19 19 5"/><path d="M7 7h5V2"/><path d="M17 17h-5v5"/>' : '<path d="M12 21s7-5.2 7-11a7 7 0 1 0-14 0c0 5.8 7 11 7 11Z"/><circle cx="12" cy="10" r="2.5"/>';
-  return `<div style="width:34px;height:34px;border-radius:11px;border:3px solid white;box-shadow:0 2px 8px rgba(15,23,42,.28);background:${color};display:flex;align-items:center;justify-content:center;transform:translate(-50%,-50%);"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="white" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${icon}</svg></div>`;
-}
-const savedCoordinates = coordinateData as unknown as { projects: Array<{ id: string; lat: number; lon: number; matchedAddress: string; method: string }> };
-const coordinatePoints = Object.fromEntries((savedCoordinates.projects ?? []).map((item) => [item.id, { lat: item.lat, lon: item.lon, matchedAddress: item.matchedAddress, method: item.method, exact: true }])) as Record<string, Point>;
+function markerIcon(type?: string) { const color = type === "Transportation" ? "#0891b2" : type === "Public Building" ? "#4f46e5" : type === "Housing" || type === "Mixed-Use" || type === "Commercial" ? "#059669" : "#334155"; const icon = type === "Housing" || type === "Mixed-Use" ? '<path d="M4 10.5 12 4l8 6.5"/><path d="M6.5 9.5V20h11V9.5"/><path d="M10 20v-5h4v5"/>' : type === "Commercial" ? '<path d="M4 10h16l-1.5-5h-13L4 10Z"/><path d="M5 10v10h14V10"/><path d="M9 20v-5h6v5"/>' : type === "Public Building" ? '<path d="M3 20h18"/><path d="M5 20V9h14v11"/><path d="M4 9 12 4l8 5"/>' : type === "Transportation" ? '<path d="M5 19 19 5"/><path d="M7 7h5V2"/><path d="M17 17h-5v5"/>' : '<path d="M12 21s7-5.2 7-11a7 7 0 1 0-14 0c0 5.8 7 11 7 11Z"/><circle cx="12" cy="10" r="2.5"/>'; return `<div style="width:34px;height:34px;border-radius:11px;border:3px solid white;box-shadow:0 2px 8px rgba(15,23,42,.28);background:${color};display:flex;align-items:center;justify-content:center;transform:translate(-50%,-50%);"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="white" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">${icon}</svg></div>`; }
+function escapeHtml(value: string) { return value.replace(/[&<>"']/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" })[character] ?? character); }
+async function loadLeaflet(): Promise<Leaflet> { if (window.L) return window.L; await new Promise<void>((resolve, reject) => { const link = document.getElementById("leaflet-css") ?? document.createElement("link"); if (!link.id) { link.id = "leaflet-css"; (link as HTMLLinkElement).rel = "stylesheet"; (link as HTMLLinkElement).href = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"; document.head.appendChild(link); } const existing = document.getElementById("leaflet-js") as HTMLScriptElement | null; if (existing) { if (window.L) return resolve(); existing.addEventListener("load", () => resolve(), { once: true }); existing.addEventListener("error", () => reject(new Error("Map library could not be loaded.")), { once: true }); return; } const script = document.createElement("script"); script.id = "leaflet-js"; script.src = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"; script.async = true; script.onload = () => resolve(); script.onerror = () => reject(new Error("Map library could not be loaded.")); document.body.appendChild(script); }); if (!window.L) throw new Error("Map library did not initialize."); return window.L; }
+
+const savedCoordinates = coordinateData as unknown as { projects: Array<{ id: string; lat: number; lon: number; matchedAddress: string; method: string; exact?: boolean }> };
+const coordinatePoints = Object.fromEntries((savedCoordinates.projects ?? []).map((item) => [item.id, { lat: item.lat, lon: item.lon, matchedAddress: item.matchedAddress, method: item.method, exact: item.exact }])) as Record<string, Point>;
 
 export default function MapClient({ projects }: Props) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -35,99 +34,15 @@ export default function MapClient({ projects }: Props) {
   const [locationMessage, setLocationMessage] = useState("Preparing official Newton GIS locations");
 
   const filteredProjects = useMemo(() => { const q = search.trim().toLowerCase(); return projects.filter((project) => { if (q && ![project.name, project.address, project.village, project.type ?? "", project.description].join(" ").toLowerCase().includes(q)) return false; if (type !== "All" && project.type !== type) return false; if (status !== "All" && project.status !== status) return false; return true; }); }, [projects, search, type, status]);
+  const types = Array.from(new Set(projects.map((project) => project.type).filter(Boolean))) as string[];
+  const statuses = Array.from(new Set(projects.map((project) => project.status))).sort();
+  const mappedCount = projects.filter((project) => locations[project.id]).length;
+  const visibleMappedCount = filteredProjects.filter((project) => locations[project.id]).length;
+  const unresolvedCount = projects.filter((project) => !locations[project.id]).length;
 
-  useEffect(() => {
-    let cancelled = false;
-    async function loadLocations() {
-      const next: Record<string, Point> = { ...coordinatePoints };
-      const pending = projects.filter((project) => !next[project.id]);
-      setMapReady(false);
-      setMapError(null);
-      setLocationProgress(pending.length ? 0 : 100);
-      setLocationMessage(pending.length ? "Locating projects from official Newton GIS" : "Using saved official GIS locations");
+  useEffect(() => { let cancelled = false; async function loadLocations() { const next: Record<string, Point> = { ...coordinatePoints }; const pending = projects.filter((project) => !next[project.id]); setMapReady(false); setMapError(null); setLocationProgress(pending.length ? 0 : 100); setLocationMessage(pending.length ? "Locating projects from official Newton GIS" : "Using saved official GIS locations"); for (let index = 0; index < pending.length; index += 1) { const project = pending[index]; try { const response = await fetch(`/api/project-locations?id=${encodeURIComponent(project.id)}`, { cache: "no-store" }); if (!response.ok) throw new Error("Location lookup failed."); const data = await response.json(); if (data.location) next[project.id] = data.location; } catch { /* continue */ } if (!cancelled) { const completed = index + 1; setLocationProgress(Math.round((completed / pending.length) * 100)); setLocationMessage(`Locating project ${completed} of ${pending.length}`); } } if (!cancelled) { setLocations(next); setLocationProgress(100); setLocationMessage(`Located ${Object.keys(next).length} project locations`); } } void loadLocations(); return () => { cancelled = true; }; }, [projects]);
 
-      for (let index = 0; index < pending.length; index += 1) {
-        const project = pending[index];
-        try {
-          const response = await fetch(`/api/project-locations?id=${encodeURIComponent(project.id)}`, { cache: "no-store" });
-          if (!response.ok) throw new Error("Location lookup failed.");
-          const data = await response.json();
-          if (data.location) next[project.id] = data.location;
-        } catch {
-          // Continue so one unavailable record cannot prevent the rest of the map from loading.
-        }
-        if (!cancelled) {
-          const completed = index + 1;
-          setLocationProgress(Math.round((completed / pending.length) * 100));
-          setLocationMessage(`Locating project ${completed} of ${pending.length}`);
-        }
-      }
+  useEffect(() => { if (locationProgress < 100) return; let cancelled = false; async function renderMap() { try { const L = await loadLeaflet(); if (cancelled) return; const element = document.getElementById("newton-project-map"); if (!element) return; window.__newtonProjectMap?.remove(); const map = L.map(element, { scrollWheelZoom: true }).setView([42.337, -71.209], 12.2); window.__newtonProjectMap = map; L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { attribution: "&copy; OpenStreetMap contributors", maxZoom: 19 }).addTo(map); const visible = filteredProjects.filter((project) => locations[project.id]); for (const project of visible) { const point = locations[project.id]; const icon = L.divIcon({ className: "newton-map-marker", html: markerIcon(project.type), iconSize: [34, 34], iconAnchor: [17, 17] }); const locationLabel = point.exact === false ? "Reference location" : "Official GIS address"; L.marker([point.lat, point.lon], { icon }).addTo(map).bindPopup(`<strong>${escapeHtml(project.name)}</strong><br/><span>${escapeHtml(typeLabel(project.type))} · ${escapeHtml(project.status)}</span><br/><small>${locationLabel}: ${escapeHtml(point.matchedAddress)}</small><br/><a href="/projects/${encodeURIComponent(project.id)}">View project</a>`).on("click", () => setSelectedId(project.id)); } if (visible.length > 0) map.fitBounds(L.latLngBounds(visible.map((project) => [locations[project.id].lat, locations[project.id].lon] as [number, number])).pad(0.08)); if (!cancelled) setMapReady(true); } catch (error) { if (!cancelled) { setMapError(error instanceof Error ? error.message : "The map could not be loaded."); setMapReady(false); } } } void renderMap(); return () => { cancelled = true; }; }, [filteredProjects, locations, locationProgress]);
 
-      if (!cancelled) {
-        setLocations(next);
-        setLocationProgress(100);
-        setLocationMessage(`Located ${Object.keys(next).length} project locations`);
-      }
-    }
-    void loadLocations();
-    return () => { cancelled = true; };
-  }, [projects]);
-
-  useEffect(() => {
-    if (locationProgress < 100) return;
-    let cancelled = false;
-    async function renderMap() {
-      try {
-        const L = await loadLeaflet();
-        if (cancelled) return;
-        const element = document.getElementById("newton-project-map");
-        if (!element) return;
-        window.__newtonProjectMap?.remove();
-        const map = L.map(element, { scrollWheelZoom: true }).setView([42.337, -71.209], 12.2);
-        window.__newtonProjectMap = map;
-        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { attribution: "&copy; OpenStreetMap contributors", maxZoom: 19 }).addTo(map);
-        const visible = filteredProjects.filter((project) => locations[project.id]);
-        for (const project of visible) {
-          const point = locations[project.id];
-          const icon = L.divIcon({ className: "newton-map-marker", html: markerIcon(project.type), iconSize: [34, 34], iconAnchor: [17, 17] });
-          const locationLabel = point.exact === false ? "Reference location" : "Official GIS address";
-          L.marker([point.lat, point.lon], { icon }).addTo(map)
-            .bindPopup(`<strong>${escapeHtml(project.name)}</strong><br/><span>${escapeHtml(typeLabel(project.type))} · ${escapeHtml(project.status)}</span><br/><small>${locationLabel}: ${escapeHtml(point.matchedAddress)}</small><br/><a href="/projects/${encodeURIComponent(project.id)}">View project</a>`)
-            .on("click", () => setSelectedId(project.id));
-        }
-        if (visible.length > 0) map.fitBounds(L.latLngBounds(visible.map((project) => [locations[project.id].lat, locations[project.id].lon] as [number, number])).pad(0.08));
-        if (!cancelled) setMapReady(true);
-      } catch (error) {
-        if (!cancelled) setMapError(error instanceof Error ? error.message : "The map could not be loaded.");
-      }
-    }
-    void renderMap();
-    return () => { cancelled = true; };
-  }, [filteredProjects, locations, locationProgress]);
-
-  return (
-    <div className="space-y-4">
-      <div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-slate-100">
-        {!mapReady && !mapError && (
-          <div className="absolute inset-0 z-20 flex items-center justify-center bg-white/95">
-            <div className="w-full max-w-md px-6 text-center">
-              <p className="text-sm font-semibold text-slate-900">Locating project locations</p>
-              <p className="mt-1 text-sm text-slate-600">{locationMessage}</p>
-              <div className="mt-4 h-2 overflow-hidden rounded-full bg-slate-200">
-                <div className="h-full rounded-full bg-slate-800 transition-all" style={{ width: `${locationProgress}%` }} />
-              </div>
-              <p className="mt-2 text-xs font-medium text-slate-500">{locationProgress}%</p>
-            </div>
-          </div>
-        )}
-        {mapError && <div className="absolute inset-0 z-20 flex items-center justify-center bg-white/95 p-6 text-center text-sm text-slate-700">{mapError}</div>}
-        <div id="newton-project-map" className="h-[70vh] min-h-[520px] w-full" />
-      </div>
-      {selectedId && (
-        <div className="text-sm text-slate-600">
-          Selected project: <Link className="font-semibold text-slate-900 underline" href={`/projects/${encodeURIComponent(selectedId)}`}>{projects.find((p) => p.id === selectedId)?.name ?? "Project"}</Link>
-        </div>
-      )}
-    </div>
-  );
+  return (<div className="grid gap-4 lg:grid-cols-[330px_minmax(0,1fr)]"><aside className="order-2 overflow-hidden rounded-2xl border border-slate-200 bg-white lg:order-1" aria-label="Map filters and project list"><div className="border-b border-slate-200 bg-slate-50/70 p-4"><div className="flex items-center justify-between gap-3"><div><p className="text-sm font-bold text-slate-950">Find a project</p><p className="mt-0.5 text-xs text-slate-500">{filteredProjects.length} matching projects</p></div><span className="rounded-full bg-white px-2.5 py-1 text-xs font-bold text-slate-600 shadow-sm">{mappedCount} mapped</span></div><label htmlFor="map-search" className="sr-only">Search projects</label><input id="map-search" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Project, address, village…" className="mt-4 w-full rounded-xl border border-slate-300 bg-white px-3.5 py-3 text-sm outline-none" /><div className="mt-3 grid grid-cols-2 gap-2"><label className="sr-only" htmlFor="map-type">Filter by type</label><select id="map-type" value={type} onChange={(e) => setType(e.target.value)} className="rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm"><option value="All">All types</option>{types.map((item) => <option key={item} value={item}>{typeLabel(item)}</option>)}</select><label className="sr-only" htmlFor="map-status">Filter by status</label><select id="map-status" value={status} onChange={(e) => setStatus(e.target.value)} className="rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm"><option value="All">All statuses</option>{statuses.map((item) => <option key={item} value={item}>{item}</option>)}</select></div></div><div className="max-h-[620px] overflow-y-auto">{filteredProjects.map((project) => <Link key={project.id} href={`/projects/${project.id}`} onClick={() => setSelectedId(project.id)} className="block border-b border-slate-100 p-4 text-left hover:bg-slate-50"><div className="flex items-center gap-2"><span className={`flex h-8 w-8 items-center justify-center rounded-lg text-xs ${markerClass(project.type)}`}><span className="text-white">{project.type === "Transportation" ? "↗" : project.type === "Public Building" ? "▦" : project.type === "Commercial" ? "▤" : "⌂"}</span></span><span className="text-xs font-bold uppercase tracking-wide text-slate-500">{typeLabel(project.type)}</span></div><p className="mt-2 font-bold leading-5 text-slate-950">{project.name}</p><p className="mt-1 text-xs text-slate-500">{project.address}</p><p className="mt-2 text-xs font-semibold text-slate-600">{project.status}</p></Link>)}</div></aside><section className="order-1 overflow-hidden rounded-2xl border border-slate-200 bg-white lg:order-2" aria-label="Newton project map"><div className="flex flex-col gap-2 border-b border-slate-200 px-5 py-4 sm:flex-row sm:items-center sm:justify-between"><div><p className="text-sm font-bold text-slate-950">Newton project map</p><p className="text-xs text-slate-500">{visibleMappedCount} mapped locations · {filteredProjects.length} projects matching filters</p></div><Link href="/projects" className="text-xs font-bold text-slate-700 underline">View directory →</Link></div><div className="relative h-[560px] w-full bg-slate-100"><div id="newton-project-map" className="h-full w-full" />{!mapReady && !mapError && <div className="absolute inset-0 z-20 flex items-center justify-center bg-white/95"><div className="w-full max-w-md px-6 text-center"><p className="text-sm font-semibold text-slate-900">Locating project locations</p><p className="mt-1 text-sm text-slate-600">{locationMessage}</p><div className="mt-4 h-2 overflow-hidden rounded-full bg-slate-200"><div className="h-full rounded-full bg-slate-800 transition-all" style={{ width: `${locationProgress}%` }} /></div><p className="mt-2 text-xs font-medium text-slate-500">{locationProgress}%</p><p className="mt-3 text-[11px] leading-4 text-slate-400">Locations are matched to City of Newton GIS datasets.</p></div></div>}{mapError && <div className="absolute inset-0 z-20 flex items-center justify-center bg-white/95 p-6 text-center text-sm text-slate-700">{mapError}</div>}</div><p className="border-t border-slate-200 bg-slate-50 px-4 py-3 text-xs leading-5 text-slate-600">{unresolvedCount === 0 ? "All catalog projects have a map location." : `${unresolvedCount} catalog project${unresolvedCount === 1 ? "" : "s"} currently lack a GIS location.`} Locations are sourced from City of Newton GIS; reference locations are labeled when the source does not identify an exact address.</p><div className="border-t border-slate-200 px-5 py-3 text-xs text-slate-500">Locations: City of Newton GIS · Basemap: OpenStreetMap</div></section>{selectedId && <div className="order-3 rounded-2xl border border-slate-200 bg-white p-5 lg:col-span-2"><p className="text-xs font-bold uppercase tracking-wide text-slate-500">Selected project</p><p className="mt-1 text-xl font-bold">{projects.find((item) => item.id === selectedId)?.name ?? "Project"}</p></div>}</div>);
 }
