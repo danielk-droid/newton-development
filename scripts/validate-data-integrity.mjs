@@ -15,6 +15,8 @@ const transportationSource = await fs.readFile(transportationPath, "utf8");
 const eventsSource = await fs.readFile(eventsPath, "utf8");
 const status = JSON.parse(await fs.readFile(statusPath, "utf8"));
 
+const allowedEventHosts = new Set(status.allowedHosts ?? ["www.newtonma.gov", "apps.newtonma.gov"]);
+
 if (!Array.isArray(data.projects) || data.projects.length === 0) {
   throw new Error("Private development project data is empty.");
 }
@@ -67,6 +69,9 @@ for (const block of eventBlocks) {
   let parsedUrl;
   try { parsedUrl = new URL(sourceUrl); } catch { throw new Error(`Event ${id} has an invalid source URL.`); }
   if (parsedUrl.protocol !== "https:") throw new Error(`Event ${id} source URL must use HTTPS.`);
+  if (!allowedEventHosts.has(parsedUrl.hostname.toLowerCase())) {
+    throw new Error(`Event ${id} points outside the approved City source hosts: ${sourceUrl}`);
+  }
 
   const key = `${projectId}|${date}|${read("type")}`;
   if (seenEventKeys.has(key)) throw new Error(`Duplicate project event key: ${key}`);
@@ -77,9 +82,22 @@ if (!Array.isArray(status.sources) || status.sources.length === 0) {
   throw new Error("No event source health records are present.");
 }
 
+if (status.sources.length !== 6) {
+  throw new Error(`Expected 6 configured official event sources, found ${status.sources.length}.`);
+}
+
+for (const source of status.sources) {
+  let parsed;
+  try { parsed = new URL(source.url); } catch { throw new Error(`Event source ${source.name} has an invalid URL.`); }
+  if (!allowedEventHosts.has(parsed.hostname.toLowerCase())) {
+    throw new Error(`Event source ${source.name} is outside the approved City source hosts: ${source.url}`);
+  }
+}
+
 if (status.successfulSources < 1) {
   throw new Error("No official event source completed successfully.");
 }
 
 console.log(`Validated ${projectIds.size} catalog projects, ${eventBlocks.length} events, and ${urlFields.length} source URLs.`);
+console.log(`Approved event hosts: ${[...allowedEventHosts].join(", ")}`);
 console.log(`Event source health: ${status.successfulSources} successful, ${status.failedSources} failed.`);
