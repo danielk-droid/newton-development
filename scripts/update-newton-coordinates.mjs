@@ -7,71 +7,36 @@ const SOURCE_PATH = path.join(ROOT, "data", "newton-source.json");
 const PUBLIC_PATH = path.join(ROOT, "data", "public-projects.ts");
 const TRANSPORT_PATH = path.join(ROOT, "data", "transportation-projects.ts");
 const OUTPUT_PATH = path.join(ROOT, "data", "project-coordinates.json");
+const STATUS_PATH = path.join(ROOT, "data", "coordinate-collection-status.json");
+
 const GIS_BASE = "https://gisweb.newtonma.gov/server/rest/services/Data/MapServer";
 const ADDRESS_LAYER = `${GIS_BASE}/12/query`;
-const STREET_LAYER = `${GIS_BASE}/15/query`;
-
-const STREET_TYPES = {
-  st: "street",
-  street: "street",
-  rd: "road",
-  road: "road",
-  ave: "avenue",
-  avenue: "avenue",
-  av: "avenue",
-  dr: "drive",
-  drive: "drive",
-  pkwy: "parkway",
-  parkway: "parkway",
-  pl: "place",
-  place: "place",
-  ln: "lane",
-  lane: "lane",
-  ct: "court",
-  court: "court",
-  cir: "circle",
-  circle: "circle",
-  ter: "terrace",
-  terrace: "terrace",
-  blvd: "boulevard",
-  boulevard: "boulevard",
-  way: "way",
-  hwy: "highway",
-  highway: "highway",
-};
+const FACILITY_LAYER = `${GIS_BASE}/13/query`;
+const STREET_LAYER = `${GIS_BASE}/15/query";
+const CITY_REFERENCE_ADDRESS = "1000 Commonwealth Avenue";
 
 function normalize(value) {
-  return String(value ?? "")
-    .toLowerCase()
-    .replace(/[.,]/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
+  return String(value ?? "").toLowerCase().replace(/[.,]/g, " ").replace(/\s+/g, " ").trim();
 }
 
-function streetBase(value) {
-  const normalized = normalize(value);
-  const words = normalized.split(" ").filter(Boolean);
-  const typeIndex = words.findIndex((word) => STREET_TYPES[word]);
-  return (typeIndex >= 0 ? words.slice(0, typeIndex) : words).join(" ");
+function quote(value) {
+  return String(value).replace(/'/g, "''");
 }
 
 function parseProjects(source) {
   const lines = source.split(/\r?\n/);
   const projects = [];
   for (let i = 0; i < lines.length; i += 1) {
-    const idMatch = lines[i].match(/^\s*id:\s*"([^"]+)"/);
-    if (!idMatch) continue;
-
+    const id = lines[i].match(/^\s*id:\s*"([^"]+)"/)?.[1];
+    if (!id) continue;
     let name = null;
     let address = null;
-    for (let j = i + 1; j < Math.min(i + 16, lines.length); j += 1) {
+    for (let j = i + 1; j < Math.min(i + 20, lines.length); j += 1) {
       if (/^\s*id:\s*"/.test(lines[j])) break;
       name ??= lines[j].match(/^\s*name:\s*"([^"]+)"/)?.[1] ?? null;
       address ??= lines[j].match(/^\s*address:\s*"([^"]+)"/)?.[1] ?? null;
-      if (name && address) break;
     }
-
-    if (name && address) projects.push({ id: idMatch[1], name, address });
+    if (name && address) projects.push({ id, name, address });
   }
   return projects;
 }
@@ -84,115 +49,148 @@ function mergeProjects(...groups) {
   return [...map.values()];
 }
 
-function parseAddress(address) {
-  const value = String(address);
-  const match = value.match(/\b(\d{1,5}(?:-\d{1,5})?)\s+([A-Za-z][A-Za-z' -]*?\b(?:Street|St|Road|Rd|Avenue|Ave|Drive|Dr|Parkway|Pkwy|Place|Pl|Way|Lane|Ln|Court|Ct|Circle|Cir|Terrace|Ter|Boulevard|Blvd|Highway|Hwy)\b)/i);
+function parseExactAddress(address) {
+  const match = String(address).match(/\b(\d{1,5})(?:-\d{1,5})?\s+(.+?\b(?:Street|St|Road|Rd|Avenue|Ave|Drive|Dr|Parkway|Pkwy|Place|Pl|Way|Lane|Ln|Court|Ct|Circle|Cir|Terrace|Ter|Boulevard|Blvd|Highway|Hwy|Streets)\b)/i);
   if (!match) return null;
-  return { number: match[1].split("-")[0], street: match[2].trim() };
+  const words = match[2].trim().split(/\s+/);
+  const type = words.pop();
+  return { number: Number(match[1]), streetName: words.join(" "), type };
 }
 
-function parseStreetOnly(address) {
-  const match = String(address).match(/^\s*([^,]+?)(?:\s+street|\s+st|\s+road|\s+rd|\s+avenue|\s+ave|\s+drive|\s+dr|\s+parkway|\s+pkwy|\s+place|\s+pl|\s+way|\s+lane|\s+ln|\s+court|\s+ct|\s+circle|\s+cir|\s+terrace|\s+ter|\s+boulevard|\s+blvd|\s+highway|\s+hwy)\b/i);
-  return match ? match[0].trim() : null;
+function splitLocationNames(address) {
+  return String(address)
+    .split(/\s*(?:&|\bat\b|\band\b|\/)\s*/i)
+    .map((value) => value.trim())
+    .filter(Boolean);
 }
 
-async function query(url, params) {
-  const target = `${url}?${new URLSearchParams({ ...params, f: "json" })}`;
-  const response = await fetch(target, {
-    headers: { "User-Agent": "Newton Development official GIS updater" },
-  });
-  if (!response.ok) throw new Error(`GIS HTTP ${response.status}`);
-  const data = await response.json();
-  if (data.error) throw new Error(`GIS query failed: ${data.error.message}`);
-  return data;
-}
-
-async function findAddress(project) {
-  const parsed = parseAddress(project.address);
-  if (!parsed) return null;
-
-  const base = streetBase(parsed.street);
-  if (!base) return null;
-
-  const data = await query(ADDRESS_LAYER, {
-    where: `Number=${Number(parsed.number)} AND UPPER(FullStName) LIKE UPPER('%${base.replace(/'/g, "''")}%') AND Status <> 'Inactive'`,
-    outFields: "Number,NumberSuffix,FullStName,Address,Status,LocationType",
-    returnGeometry: "true",
-    outSR: "4326",
-    resultRecordCount: "20",
-  });
-
-  const feature = (data.features ?? []).find(
-    (item) => item.geometry?.x != null && item.geometry?.y != null,
-  );
-  if (!feature) return null;
-
-  return {
-    lat: Number(feature.geometry.y),
-    lon: Number(feature.geometry.x),
-    matchedAddress: feature.attributes?.Address ?? project.address,
-    method: "official-address-point",
-  };
-}
-
-async function findStreet(project) {
-  const street = parseStreetOnly(project.address);
-  if (!street) return null;
-
-  const base = streetBase(street);
-  if (!base) return null;
-
-  const data = await query(STREET_LAYER, {
-    where: `UPPER(NAME) LIKE UPPER('%${base.replace(/'/g, "''")}%')`,
-    outFields: "NAME,OBJECTID",
+async function query(url, where, outFields) {
+  const params = new URLSearchParams({
+    where,
+    outFields,
     returnGeometry: "true",
     outSR: "4326",
     resultRecordCount: "200",
+    f: "json",
   });
+  const response = await fetch(`${url}?${params}`, {
+    headers: { "User-Agent": "Newton Development GIS updater" },
+  });
+  if (!response.ok) throw new Error(`Official Newton GIS HTTP ${response.status}`);
+  const data = await response.json();
+  if (data.error) throw new Error(data.error.message ?? "Official Newton GIS query failed");
+  return data.features ?? [];
+}
 
-  const points = (data.features ?? []).flatMap((feature) =>
-    (feature.geometry?.paths ?? []).flat(),
+function geometryPoint(feature) {
+  const x = Number(feature?.geometry?.x);
+  const y = Number(feature?.geometry?.y);
+  return Number.isFinite(x) && Number.isFinite(y) ? { lat: y, lon: x } : null;
+}
+
+async function findAddress(address) {
+  const parsed = parseExactAddress(address);
+  if (!parsed) return null;
+  const features = await query(
+    ADDRESS_LAYER,
+    `Number=${parsed.number} AND UPPER(StreetName)=UPPER('${quote(parsed.streetName)}') AND Status <> 'Inactive'`,
+    "Number,NumberSuffix,StreetName,PostType,FullStName,Address,Status,LocationType",
   );
-  if (!points.length) return null;
-
-  const lat = points.reduce((sum, point) => sum + Number(point[1]), 0) / points.length;
-  const lon = points.reduce((sum, point) => sum + Number(point[0]), 0) / points.length;
-
+  const feature = features.find((item) => geometryPoint(item));
+  if (!feature) return null;
   return {
-    lat,
-    lon,
-    matchedAddress: street,
-    method: "official-street-centerline",
+    ...geometryPoint(feature),
+    matchedAddress: feature.attributes?.Address ?? address,
+    method: "official-address-point",
+    exact: true,
   };
+}
+
+async function findFacility(name) {
+  const features = await query(FACILITY_LAYER, `UPPER(Name) LIKE UPPER('%${quote(name)}%')`, "Name,Type");
+  const feature = features.find((item) => geometryPoint(item));
+  if (!feature) return null;
+  return {
+    ...geometryPoint(feature),
+    matchedAddress: feature.attributes?.Name ?? name,
+    method: "official-facility-point",
+    exact: true,
+  };
+}
+
+async function findStreet(name) {
+  const normalized = normalize(name);
+  if (!normalized) return null;
+  const features = await query(STREET_LAYER, `UPPER(NAME) LIKE UPPER('%${quote(normalized)}%')`, "NAME,OBJECTID");
+  const points = features.flatMap((feature) => feature.geometry?.paths?.flat() ?? []).filter((point) => Array.isArray(point) && point.length >= 2);
+  if (!points.length) return null;
+  const lon = points.reduce((sum, point) => sum + Number(point[0]), 0) / points.length;
+  const lat = points.reduce((sum, point) => sum + Number(point[1]), 0) / points.length;
+  if (!Number.isFinite(lat) || !Number.isFinite(lon)) return null;
+  return { lat, lon, matchedAddress: name, method: "official-street-centerline", exact: false };
 }
 
 const source = JSON.parse(await fs.readFile(SOURCE_PATH, "utf8"));
 const publicSource = await fs.readFile(PUBLIC_PATH, "utf8");
 const transportSource = await fs.readFile(TRANSPORT_PATH, "utf8");
-const projects = mergeProjects(
-  source.projects ?? [],
-  parseProjects(publicSource),
-  parseProjects(transportSource),
-);
+const projects = mergeProjects(source.projects ?? [], parseProjects(publicSource), parseProjects(transportSource));
 
 const resolved = [];
 const unresolved = [];
+let cityReference = null;
 
 for (const project of projects) {
-  if (/^citywide$/i.test(project.address.trim())) {
-    unresolved.push({ id: project.id, address: project.address, reason: "citywide" });
-    continue;
-  }
-
   try {
-    const point = (await findAddress(project)) ?? (await findStreet(project));
+    let point = await findAddress(project.address);
+
+    if (!point && /pellegrini/i.test(project.name + " " + project.address)) {
+      point = await findFacility("Pellegrini");
+    }
+
+    const names = splitLocationNames(project.address);
+    if (!point && names.length > 1) {
+      const refs = [];
+      for (const name of names) {
+        const streetPoint = await findStreet(name);
+        if (streetPoint) refs.push(streetPoint);
+      }
+      if (refs.length) {
+        point = {
+          lat: refs.reduce((sum, item) => sum + item.lat, 0) / refs.length,
+          lon: refs.reduce((sum, item) => sum + item.lon, 0) / refs.length,
+          matchedAddress: refs.map((item) => item.matchedAddress).join(" & "),
+          method: "official-intersection-reference",
+          exact: false,
+        };
+      }
+    }
+
+    if (!point) point = await findStreet(project.address);
+
+    if (!point) {
+      cityReference ??= await findAddress(CITY_REFERENCE_ADDRESS);
+      if (cityReference) {
+        point = {
+          lat: cityReference.lat,
+          lon: cityReference.lon,
+          matchedAddress: "Newton citywide reference",
+          method: "official-citywide-reference",
+          exact: false,
+        };
+      }
+    }
+
     if (point && Number.isFinite(point.lat) && Number.isFinite(point.lon)) {
       resolved.push({ id: project.id, ...point });
     } else {
-      unresolved.push({ id: project.id, address: project.address, reason: "no official GIS match" });
+      unresolved.push({ id: project.id, address: project.address, reason: "No official Newton GIS match" });
     }
   } catch (error) {
-    unresolved.push({ id: project.id, address: project.address, reason: error.message });
+    unresolved.push({
+      id: project.id,
+      address: project.address,
+      reason: error instanceof Error ? error.message : "Unknown GIS error",
+    });
   }
 }
 
@@ -200,13 +198,14 @@ if (resolved.length === 0) {
   throw new Error("Official Newton GIS returned no project coordinates; refusing to publish coordinate data.");
 }
 
+const checkedAt = new Date().toISOString();
 await fs.writeFile(
   OUTPUT_PATH,
   `${JSON.stringify(
     {
-      checkedAt: new Date().toISOString(),
-      source: `${GIS_BASE}/12 and ${GIS_BASE}/15`,
-      sourceDescription: "City of Newton GIS address points and street centerlines",
+      checkedAt,
+      source: `${GIS_BASE}/12, ${GIS_BASE}/13, and ${GIS_BASE}/15`,
+      sourceDescription: "City of Newton GIS address points, city facilities, and street centerlines",
       projects: resolved,
       unresolved,
     },
@@ -216,5 +215,26 @@ await fs.writeFile(
   "utf8",
 );
 
+await fs.writeFile(
+  STATUS_PATH,
+  `${JSON.stringify(
+    {
+      checkedAt,
+      source: `${GIS_BASE}/12, ${GIS_BASE}/13, and ${GIS_BASE}/15`,
+      totalProjects: projects.length,
+      resolvedProjects: resolved.length,
+      unresolvedProjects: unresolved.length,
+      exactLocations: resolved.filter((item) => item.exact).length,
+      referenceLocations: resolved.filter((item) => !item.exact).length,
+      failures: unresolved,
+    },
+    null,
+    2,
+  )}\n`,
+  "utf8",
+);
+
 console.log(`Resolved ${resolved.length} of ${projects.length} catalog projects from official Newton GIS.`);
+console.log(`Exact locations: ${resolved.filter((item) => item.exact).length}.`);
+console.log(`Reference locations: ${resolved.filter((item) => !item.exact).length}.`);
 console.log(`Unresolved: ${unresolved.length}.`);
