@@ -12,7 +12,7 @@ const STATUS_PATH = path.join(ROOT, "data", "coordinate-collection-status.json")
 const GIS_BASE = "https://gisweb.newtonma.gov/server/rest/services/Data/MapServer";
 const ADDRESS_LAYER = `${GIS_BASE}/12/query`;
 const FACILITY_LAYER = `${GIS_BASE}/13/query`;
-const STREET_LAYER = `${GIS_BASE}/15/query";
+const STREET_LAYER = `${GIS_BASE}/15/query`;
 const CITY_REFERENCE_ADDRESS = "1000 Commonwealth Avenue";
 
 function normalize(value) {
