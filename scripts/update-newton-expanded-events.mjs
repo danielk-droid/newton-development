@@ -44,6 +44,12 @@ const RELEVANT_PAGE_PATTERNS = [
   /planning.*development/i,
 ];
 
+const STREET_TYPES = new Map([
+  ["st", "street"], ["rd", "road"], ["ave", "avenue"], ["av", "avenue"], ["dr", "drive"],
+  ["pkwy", "parkway"], ["pl", "place"], ["ln", "lane"], ["ct", "court"], ["cir", "circle"],
+  ["ter", "terrace"], ["blvd", "boulevard"], ["way", "way"], ["hwy", "highway"],
+]);
+
 function cleanText(value) {
   return String(value ?? "")
     .replace(/<[^>]+>/g, " ")
@@ -56,7 +62,16 @@ function cleanText(value) {
 }
 
 function normalize(value) {
-  return cleanText(value).toLowerCase().replace(/[–—]/g, "-");
+  return cleanText(value)
+    .toLowerCase()
+    .replace(/[–—]/g, "-")
+    .replace(/[.,]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function normalizeStreet(value) {
+  return normalize(value).split(" ").map((token) => STREET_TYPES.get(token) ?? token).join(" ");
 }
 
 function absoluteUrl(value) {
@@ -73,9 +88,7 @@ function isAllowedCityUrl(url) {
 }
 
 function assertAllowedCityUrl(url) {
-  if (!isAllowedCityUrl(url)) {
-    throw new Error(`Blocked non-City source URL: ${url}`);
-  }
+  if (!isAllowedCityUrl(url)) throw new Error(`Blocked non-City source URL: ${url}`);
 }
 
 function isPdf(url) {
@@ -121,51 +134,80 @@ function parseDate(text) {
   return null;
 }
 
-function addressTokens(project) {
-  const tokens = new Set();
-  for (const value of [project.address]) {
-    const normalized = normalize(value);
-    for (const match of normalized.matchAll(/\b(\d{1,4}(?:-\d{1,4})?)\s+([a-z][a-z'-]+(?:\s+[a-z][a-z'-]+)?)\b/g)) {
-      tokens.add(`${match[1]} ${match[2]}`);
+function projectNameTerms(project) {
+  const terms = normalize(project.name)
+    .split(/\s+/)
+    .filter((term) => term.length >= 4 && !["project", "street", "road", "avenue", "city", "newton"].includes(term));
+  return [...new Set(terms)];
+}
+
+function projectAddressEvidence(project) {
+  const normalizedAddress = normalize(project.address);
+  const numericMatches = [...normalizedAddress.matchAll(/\b(\d{1,4}(?:-\d{1,4})?)\s+([a-z][a-z'-]+(?:\s+[a-z][a-z'-]+)?)\b/g)]
+    .map((match) => normalizeStreet(`${match[1]} ${match[2]}`));
+
+  const streetMatches = [...normalizedAddress.matchAll(/\b([a-z][a-z'-]+(?:\s+[a-z][a-z'-]+)?)\s+(street|road|avenue|drive|parkway|place|way|lane|court|circle|terrace|boulevard)\b/g)]
+    .map((match) => normalizeStreet(`${match[1]} ${match[2]}`));
+
+  return {
+    numeric: [...new Set(numericMatches)],
+    streets: [...new Set(streetMatches)],
+  };
+}
+
+function projectMatchEvidence(text, project) {
+  const normalized = normalize(text);
+  const address = projectAddressEvidence(project);
+  const exactNumeric = address.numeric.find((candidate) => normalized.includes(candidate));
+
+  if (exactNumeric) {
+    return { matched: true, reason: "exact-address", evidence: exactNumeric };
+  }
+
+  const exactStreets = address.streets.filter((street) => normalized.includes(street));
+  const nameTerms = projectNameTerms(project);
+  const matchedNameTerms = nameTerms.filter((term) => normalized.includes(term));
+
+  if (address.streets.length >= 2 && exactStreets.length >= 2) {
+    return { matched: true, reason: "multiple-streets", evidence: exactStreets.join(" + ") };
+  }
+
+  if (exactStreets.length === 1 && nameTerms.length > 0 && matchedNameTerms.length >= Math.min(2, nameTerms.length)) {
+    return { matched: true, reason: "street-and-project-name", evidence: `${exactStreets[0]} + ${matchedNameTerms.join(" + ")}` };
+  }
+
+  if (exactStreets.length === 1 && nameTerms.length === 0) {
+    const name = normalize(project.name);
+    if (name.length >= 12 && normalized.includes(name)) {
+      return { matched: true, reason: "project-name", evidence: name };
     }
-    const streetOnly = normalized.match(/\b([a-z][a-z'-]+\s+(?:street|road|avenue|drive|parkway|place|way|lane|court|circle|terrace|boulevard)\b)/i);
-    if (streetOnly) tokens.add(streetOnly[1]);
   }
-  return [...tokens].filter((token) => !/^(citywide|newton,? ma|newton)$/i.test(token));
+
+  return { matched: false, reason: null, evidence: null };
 }
 
-function matchingTokens(text, project) {
+function hasNearbyPhrase(text, evidence, phrases, window = 1200) {
   const normalized = normalize(text);
-  return addressTokens(project).filter((token) => {
-    const escaped = token.replace(/[.*+?^${}()|[\]\\]/g, "\\$&").replace(/[-]/g, "[-\\s]?");
-    return new RegExp(`\\b${escaped}\\b`, "i").test(normalized);
-  });
-}
-
-function hasNearbyPhrase(text, tokens, phrases, window = 1200) {
-  const normalized = normalize(text);
-  for (const token of tokens) {
-    const escaped = token.replace(/[.*+?^${}()|[\]\\]/g, "\\$&").replace(/[-]/g, "[-\\s]?");
-    const match = new RegExp(`\\b${escaped}\\b`, "i").exec(normalized);
-    if (!match) continue;
-    const start = Math.max(0, match.index - window);
-    const end = Math.min(normalized.length, match.index + match[0].length + window);
-    if (phrases.some((phrase) => phrase.test(normalized.slice(start, end)))) return true;
-  }
-  return false;
+  const escaped = evidence.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const match = new RegExp(escaped, "i").exec(normalized);
+  if (!match) return false;
+  const start = Math.max(0, match.index - window);
+  const end = Math.min(normalized.length, match.index + match[0].length + window);
+  return phrases.some((phrase) => phrase.test(normalized.slice(start, end)));
 }
 
 function isRelevantPdfTitle(title) {
   const value = cleanText(title);
   if (BLOCKED_TITLE_PATTERNS.some((pattern) => pattern.test(value))) return false;
-  return /\b(agenda|hearing|notice)\b/i.test(value) || RELEVANT_PAGE_PATTERNS.some((pattern) => pattern.test(value));
+  return /\b(agenda|hearing|notice|memorandum|memo|decision|staff report)\b/i.test(value) || RELEVANT_PAGE_PATTERNS.some((pattern) => pattern.test(value));
 }
 
-function detectType(title, pdfText, project) {
+function detectType(title, pdfText, evidence) {
   const titleValue = normalize(title);
   if (/public hearing notice|hearing notice/.test(titleValue)) return "Notice";
-  if (hasNearbyPhrase(pdfText, matchingTokens(pdfText, project), [/public hearing/, /hearing scheduled/])) return "Hearing";
+  if (hasNearbyPhrase(pdfText, evidence, [/public hearing/, /hearing scheduled/, /public hearing will be held/])) return "Hearing";
   if (/\bagenda\b/.test(titleValue)) return "Meeting";
+  if (/\bdecision\b|\bvote\b/.test(titleValue)) return "Decision";
   return null;
 }
 
@@ -194,8 +236,12 @@ function parseExistingEvents(source) {
     const read = (field) => block.match(new RegExp(`${field}:\\s*"([^"]*)"`))?.[1];
     const type = block.match(/type:\s*"([^"]*)"/)?.[1];
     const participation = block.match(/participationUrl:\s*"([^"]*)"/)?.[1];
+    const matchedAddress = block.match(/matchedAddress:\s*"([^"]*)"/)?.[1];
+    const sourceCheckedAt = block.match(/sourceCheckedAt:\s*"([^"]*)"/)?.[1];
     const event = { id: read("id"), projectId: read("projectId"), date: read("date"), title: read("title"), description: read("description"), type, sourceUrl: read("sourceUrl"), verified: true };
     if (participation) event.participationUrl = participation;
+    if (matchedAddress) event.matchedAddress = matchedAddress;
+    if (sourceCheckedAt) event.sourceCheckedAt = sourceCheckedAt;
     if (event.id && event.projectId && event.date && event.title && event.description && event.type && event.sourceUrl) events.push(event);
   }
   return events;
@@ -242,6 +288,8 @@ function serializeEvents(events) {
     "  type: ProjectEventType;",
     "  sourceUrl: string;",
     "  participationUrl?: string;",
+    "  matchedAddress?: string;",
+    "  sourceCheckedAt?: string;",
     "  verified: true;",
     "};",
     "",
@@ -258,6 +306,8 @@ function serializeEvents(events) {
     lines.push(`    type: "${escape(event.type)}",`);
     lines.push(`    sourceUrl: "${escape(event.sourceUrl)}",`);
     if (event.participationUrl) lines.push(`    participationUrl: "${escape(event.participationUrl)}",`);
+    if (event.matchedAddress) lines.push(`    matchedAddress: "${escape(event.matchedAddress)}",`);
+    if (event.sourceCheckedAt) lines.push(`    sourceCheckedAt: "${escape(event.sourceCheckedAt)}",`);
     lines.push("    verified: true,");
     lines.push("  },");
   }
@@ -287,7 +337,7 @@ async function fetchPdfText(url) {
   }
 }
 
-async function collectSource(source, projects) {
+async function collectSource(source, projects, checkedAt) {
   assertAllowedCityUrl(source.url);
   const firstPage = await fetchText(source.url);
   const pages = [{ url: source.url, html: firstPage }];
@@ -324,25 +374,29 @@ async function collectSource(source, projects) {
       const title = cleanText(link.title || link.text);
       const pdfText = await fetchPdfText(link.href);
       const combined = `${title}\n${pdfText}`;
-      const matchedProjects = projects.filter((project) => matchingTokens(combined, project).length > 0);
-      if (matchedProjects.length === 0) continue;
+      const matches = projects
+        .map((project) => ({ project, evidence: projectMatchEvidence(combined, project) }))
+        .filter((item) => item.evidence.matched);
 
+      if (matches.length === 0) continue;
       const date = parseDate(`${title}\n${pdfText}`);
       if (!date) continue;
 
-      for (const project of matchedProjects) {
-        const type = detectType(title, pdfText, project);
+      for (const { project, evidence } of matches) {
+        const type = detectType(title, pdfText, evidence.evidence);
         if (!type) continue;
         const body = bodyName(title, source);
         discovered.push({
           id: createEventId(project.id, date, type, link.href),
           projectId: project.id,
           date,
-          title: type === "Hearing" ? `${body} hearing — ${project.name}` : type === "Notice" ? `${body} notice — ${project.name}` : `${body} meeting — ${project.name}`,
-          description: type === "Hearing" ? `An official ${body} record identifies a public hearing concerning this project address.` : type === "Notice" ? `An official ${body} notice concerns this project address or its review.` : `An official ${body} agenda includes this project address.`,
+          title: type === "Hearing" ? `${body} hearing — ${project.name}` : type === "Notice" ? `${body} notice — ${project.name}` : type === "Decision" ? `${body} decision — ${project.name}` : `${body} meeting — ${project.name}`,
+          description: type === "Hearing" ? `An official ${body} record identifies a public hearing concerning this project record.` : type === "Notice" ? `An official ${body} notice concerns this project record.` : type === "Decision" ? `An official ${body} record identifies a decision or vote concerning this project record.` : `An official ${body} agenda includes this project record.`,
           type,
           sourceUrl: link.href,
           participationUrl: link.href,
+          matchedAddress: evidence.evidence,
+          sourceCheckedAt: checkedAt,
           verified: true,
         });
       }
@@ -357,14 +411,15 @@ async function collectSource(source, projects) {
 function dedupe(events) {
   const map = new Map();
   for (const event of events) {
-    const key = `${event.projectId}|${event.date}|${event.type}`;
+    const key = `${event.projectId}|${event.date}|${event.type}|${event.sourceUrl}`;
     const existing = map.get(key);
     if (!existing || (!existing.participationUrl && event.participationUrl)) map.set(key, event);
   }
-  return [...map.values()].sort((a, b) => a.date.localeCompare(b.date) || a.projectId.localeCompare(b.projectId));
+  return [...map.values()].sort((a, b) => a.date.localeCompare(b.date) || a.projectId.localeCompare(b.projectId) || a.sourceUrl.localeCompare(b.sourceUrl));
 }
 
 async function main() {
+  const checkedAt = new Date().toISOString();
   const projectData = JSON.parse(await fs.readFile(PROJECT_DATA_PATH, "utf8"));
   const publicProjectSource = await fs.readFile(PUBLIC_PROJECT_DATA_PATH, "utf8");
   const transportationProjectSource = await fs.readFile(TRANSPORTATION_PROJECT_DATA_PATH, "utf8");
@@ -380,12 +435,12 @@ async function main() {
 
   for (const source of SOURCES) {
     try {
-      const events = await collectSource(source, projects);
+      const events = await collectSource(source, projects, checkedAt);
       discovered.push(...events);
-      sourceResults.push({ name: source.name, url: source.url, ok: true, discovered: events.length });
+      sourceResults.push({ name: source.name, url: source.url, ok: true, discovered: events.length, checkedAt });
       console.log(`${source.name}: ${events.length} verified project events discovered.`);
     } catch (error) {
-      sourceResults.push({ name: source.name, url: source.url, ok: false, error: error.message });
+      sourceResults.push({ name: source.name, url: source.url, ok: false, discovered: 0, error: error.message, checkedAt });
       console.log(`${source.name}: source failed — ${error.message}`);
     }
   }
@@ -397,7 +452,7 @@ async function main() {
   await fs.writeFile(EVENTS_PATH, serializeEvents(combined), "utf8");
 
   const status = {
-    checkedAt: new Date().toISOString(),
+    checkedAt,
     allowedHosts: [...ALLOWED_HOSTS],
     catalogProjectsChecked: projects.length,
     sources: sourceResults,
