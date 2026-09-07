@@ -1,8 +1,15 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f8fafc;
-  --foreground: #0f172a;
+  --background: #f5f7fa;
+  --foreground: #0b1220;
+  --muted: #5b6678;
+  --line: #dce2ea;
+  --surface: #ffffff;
+  --surface-subtle: #f8fafc;
+  --brand: #102a43;
+  --brand-strong: #0b1f33;
+  --accent: #2f6f95;
 }
 
 @theme inline {
@@ -12,26 +19,54 @@
   --font-mono: var(--font-geist-mono);
 }
 
-* {
-  box-sizing: border-box;
-}
+* { box-sizing: border-box; }
 
 html {
   background: var(--background);
+  scroll-behavior: smooth;
 }
 
 body {
   margin: 0;
-  background: var(--background);
+  background:
+    radial-gradient(circle at 50% -15%, rgba(47, 111, 149, 0.08), transparent 32rem),
+    var(--background);
   color: var(--foreground);
   font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+  text-rendering: optimizeLegibility;
 }
 
-a {
-  text-underline-offset: 3px;
-}
+a { text-underline-offset: 3px; }
+
+button, input, select { font: inherit; }
 
 ::selection {
-  background: #e2e8f0;
-  color: #0f172a;
+  background: #d7e5ef;
+  color: #0b1220;
+}
+
+:focus-visible {
+  outline: 3px solid rgba(47, 111, 149, 0.42);
+  outline-offset: 2px;
+}
+
+.skip-link {
+  position: fixed;
+  left: 1rem;
+  top: -5rem;
+  z-index: 100;
+  border-radius: 0.75rem;
+  background: #0b1220;
+  color: white;
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 700;
+  transition: top 150ms ease;
+}
+
+.skip-link:focus { top: 1rem; }
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
 }
