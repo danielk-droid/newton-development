@@ -40,12 +40,12 @@ function typeAccent(type?: string) {
 function typeLabel(type?: string) {
   switch (type) {
     case "Public Building": return "Public project";
-    case "Transportation": return "Transportation project";
-    case "Housing": return "Housing development";
-    case "Mixed-Use": return "Mixed-use development";
-    case "Commercial": return "Commercial development";
+    case "Transportation": return "Transportation";
+    case "Housing": return "Housing";
+    case "Mixed-Use": return "Mixed-use";
+    case "Commercial": return "Commercial";
     case "Historic Preservation": return "Historic preservation";
-    case "Zoning": return "Zoning matter";
+    case "Zoning": return "Zoning";
     default: return type ?? "Project";
   }
 }
@@ -121,33 +121,33 @@ export default function ProjectsClient({ projects }: ProjectsClientProps) {
 
   return (
     <div>
-      <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm md:p-6">
+      <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_1px_2px_rgba(15,23,42,0.04)] md:p-6" aria-label="Project filters">
         <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_180px_180px_180px]">
-          <div><label htmlFor="project-search" className="text-sm font-semibold text-slate-900">Search projects</label><input id="project-search" type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Name, address, village, or keyword" className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-500 focus:ring-2 focus:ring-slate-200" /></div>
-          <div><label htmlFor="type-filter" className="text-sm font-semibold text-slate-900">Type</label><select id="type-filter" value={type} onChange={(event) => setType(event.target.value)} className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-slate-500 focus:ring-2 focus:ring-slate-200"><option value="All">All types</option>{types.map((item) => <option key={item} value={item}>{item}</option>)}</select></div>
-          <div><label htmlFor="status-filter" className="text-sm font-semibold text-slate-900">Status</label><select id="status-filter" value={status} onChange={(event) => setStatus(event.target.value)} className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-slate-500 focus:ring-2 focus:ring-slate-200"><option value="All">All statuses</option>{statuses.map((item) => <option key={item} value={item}>{item}</option>)}</select></div>
-          <div><label htmlFor="village-filter" className="text-sm font-semibold text-slate-900">Village</label><select id="village-filter" value={village} onChange={(event) => setVillage(event.target.value)} className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-slate-500 focus:ring-2 focus:ring-slate-200"><option value="All">All villages</option>{villages.map((item) => <option key={item} value={item}>{item}</option>)}</select></div>
+          <div><label htmlFor="project-search" className="text-sm font-bold text-slate-900">Search projects</label><input id="project-search" type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Name, address, village, or keyword" className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-[var(--accent)] focus:ring-4 focus:ring-sky-100" /></div>
+          <div><label htmlFor="type-filter" className="text-sm font-bold text-slate-900">Type</label><select id="type-filter" value={type} onChange={(event) => setType(event.target.value)} className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-[var(--accent)] focus:ring-4 focus:ring-sky-100"><option value="All">All types</option>{types.map((item) => <option key={item} value={item}>{typeLabel(item)}</option>)}</select></div>
+          <div><label htmlFor="status-filter" className="text-sm font-bold text-slate-900">Status</label><select id="status-filter" value={status} onChange={(event) => setStatus(event.target.value)} className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-[var(--accent)] focus:ring-4 focus:ring-sky-100"><option value="All">All statuses</option>{statuses.map((item) => <option key={item} value={item}>{item}</option>)}</select></div>
+          <div><label htmlFor="village-filter" className="text-sm font-bold text-slate-900">Village</label><select id="village-filter" value={village} onChange={(event) => setVillage(event.target.value)} className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-[var(--accent)] focus:ring-4 focus:ring-sky-100"><option value="All">All villages</option>{villages.map((item) => <option key={item} value={item}>{item}</option>)}</select></div>
         </div>
-        <div className="mt-5 flex flex-col gap-3 border-t border-slate-200 pt-5 sm:flex-row sm:items-center sm:justify-between"><p className="text-sm text-slate-600">Showing <span className="font-semibold text-slate-900">{filteredProjects.length}</span> of <span className="font-semibold text-slate-900">{projects.length}</span> projects</p>{hasFilters ? <button type="button" onClick={clearFilters} className="self-start text-sm font-semibold text-slate-700 underline underline-offset-4 hover:text-slate-950 sm:self-auto">Clear filters</button> : <p className="text-sm text-slate-500">Sorted by current status</p>}</div>
+        <div className="mt-5 flex flex-col gap-3 border-t border-slate-200 pt-5 sm:flex-row sm:items-center sm:justify-between"><p className="text-sm text-slate-600">Showing <span className="font-bold text-slate-950">{filteredProjects.length}</span> of <span className="font-bold text-slate-950">{projects.length}</span> projects</p>{hasFilters ? <button type="button" onClick={clearFilters} className="self-start text-sm font-bold text-slate-700 underline decoration-slate-300 underline-offset-4 hover:text-slate-950 sm:self-auto">Clear filters</button> : <p className="text-sm text-slate-500">Sorted by current status</p>}</div>
       </section>
 
       {filteredProjects.length === 0 ? (
-        <section className="mt-8 rounded-2xl border border-slate-200 bg-white p-10 text-center shadow-sm"><h2 className="text-xl font-semibold">No projects found</h2><p className="mt-2 text-slate-600">Try changing your search or filters.</p>{hasFilters && <button type="button" onClick={clearFilters} className="mt-5 rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-700">Clear filters</button>}</section>
+        <section className="mt-8 rounded-2xl border border-slate-200 bg-white p-10 text-center shadow-sm"><h2 className="text-xl font-bold">No projects found</h2><p className="mt-2 text-slate-600">Try changing your search or filters.</p>{hasFilters && <button type="button" onClick={clearFilters} className="mt-5 rounded-xl bg-[var(--brand)] px-4 py-2.5 text-sm font-bold text-white hover:bg-[var(--brand-strong)]">Clear filters</button>}</section>
       ) : (
         <section className="mt-6 grid gap-5 md:grid-cols-2">
           {filteredProjects.map((project) => {
             const factItems = getFactItems(project);
             const statusDescription = getStatusDescription(project.status);
             return (
-              <article key={project.id} className={`group flex flex-col rounded-2xl border border-slate-200 border-t-4 bg-white p-6 shadow-sm transition hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md ${typeAccent(project.type)}`}>
-                <div className="flex flex-wrap items-center gap-2"><ProjectStatusBadge status={project.status} size="sm" />{project.type && <span className="rounded-full border border-slate-200 px-2.5 py-1 text-xs font-semibold text-slate-600">{typeLabel(project.type)}</span>}{project.village && project.village !== "Unknown" && <span className="rounded-full border border-slate-200 px-2.5 py-1 text-xs font-semibold text-slate-600">{project.village}</span>}</div>
-                <h2 className="mt-5 text-2xl font-bold leading-tight tracking-tight">{project.name}</h2>
+              <article key={project.id} className={`group flex flex-col rounded-2xl border border-slate-200 border-t-4 bg-white p-6 shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition duration-200 hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-lg ${typeAccent(project.type)}`}>
+                <div className="flex flex-wrap items-center gap-2"><ProjectStatusBadge status={project.status} size="sm" />{project.type && <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-semibold text-slate-600">{typeLabel(project.type)}</span>}{project.village && project.village !== "Unknown" && <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-semibold text-slate-600">{project.village}</span>}</div>
+                <h2 className="mt-5 text-2xl font-bold leading-tight tracking-[-0.025em] text-slate-950">{project.name}</h2>
                 <p className="mt-3 line-clamp-4 leading-7 text-slate-600">{project.description}</p>
-                {statusDescription && <p className="mt-4 text-sm font-medium text-slate-500">{statusDescription}</p>}
+                {statusDescription && <p className="mt-4 text-sm font-semibold text-slate-500">{statusDescription}</p>}
 
-                {factItems.length > 0 && <div className={`mt-5 rounded-xl border p-4 ${project.type === "Transportation" ? "border-cyan-100 bg-cyan-50/60" : project.type === "Public Building" ? "border-indigo-100 bg-indigo-50/60" : "border-slate-200 bg-slate-50"}`}><p className={`text-xs font-semibold uppercase tracking-wide ${project.type === "Transportation" ? "text-cyan-800" : project.type === "Public Building" ? "text-indigo-700" : "text-slate-500"}`}>{project.type === "Transportation" ? "Key project details" : project.type === "Public Building" ? "Project at a glance" : "Key details"}</p><div className="mt-3 grid grid-cols-2 gap-x-5 gap-y-4">{factItems.map((fact) => <div key={`${fact.label}-${fact.value}`}><p className="text-xs font-medium uppercase tracking-wide text-slate-500">{fact.label}</p><p className="mt-1 text-sm font-semibold leading-5 text-slate-950">{fact.value}</p></div>)}</div></div>}
+                {factItems.length > 0 && <div className={`mt-5 rounded-xl border p-4 ${project.type === "Transportation" ? "border-cyan-100 bg-cyan-50/60" : project.type === "Public Building" ? "border-indigo-100 bg-indigo-50/60" : "border-slate-200 bg-slate-50"}`}><p className={`text-xs font-bold uppercase tracking-[0.12em] ${project.type === "Transportation" ? "text-cyan-800" : project.type === "Public Building" ? "text-indigo-700" : "text-slate-500"}`}>{project.type === "Transportation" ? "Key project details" : project.type === "Public Building" ? "Project at a glance" : "Key details"}</p><div className="mt-3 grid grid-cols-2 gap-x-5 gap-y-4">{factItems.map((fact) => <div key={`${fact.label}-${fact.value}`}><p className="text-xs font-medium uppercase tracking-wide text-slate-500">{fact.label}</p><p className="mt-1 text-sm font-bold leading-5 text-slate-950">{fact.value}</p></div>)}</div></div>}
 
-                <div className="mt-auto flex flex-col gap-3 pt-6 sm:flex-row sm:items-end sm:justify-between"><Link href={`/projects/${project.id}`} className="inline-flex items-center justify-center rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-700">View project<span aria-hidden="true" className="ml-2">→</span></Link><p className="text-xs text-slate-400">Updated {formatUpdated(project.lastUpdated)}</p></div>
+                <div className="mt-auto flex flex-col gap-3 pt-6 sm:flex-row sm:items-end sm:justify-between"><Link href={`/projects/${project.id}`} className="inline-flex items-center justify-center rounded-xl bg-[var(--brand)] px-4 py-2.5 text-sm font-bold text-white transition hover:bg-[var(--brand-strong)]">View project<span aria-hidden="true" className="ml-2">→</span></Link><p className="text-xs font-medium text-slate-400">Updated {formatUpdated(project.lastUpdated)}</p></div>
               </article>
             );
           })}
