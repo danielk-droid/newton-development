@@ -4,22 +4,41 @@ import { fileURLToPath } from "node:url";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const sourcePath = path.join(ROOT, "data", "newton-source.json");
+const publicProjectsPath = path.join(ROOT, "data", "public-projects.ts");
+const transportationPath = path.join(ROOT, "data", "transportation-projects.ts");
 const eventsPath = path.join(ROOT, "data", "project-events.ts");
 const statusPath = path.join(ROOT, "data", "event-collection-status.json");
 
 const data = JSON.parse(await fs.readFile(sourcePath, "utf8"));
+const publicProjectsSource = await fs.readFile(publicProjectsPath, "utf8");
+const transportationSource = await fs.readFile(transportationPath, "utf8");
 const eventsSource = await fs.readFile(eventsPath, "utf8");
 const status = JSON.parse(await fs.readFile(statusPath, "utf8"));
 
 if (!Array.isArray(data.projects) || data.projects.length === 0) {
-  throw new Error("Project data is empty.");
+  throw new Error("Private development project data is empty.");
 }
 
-const projectIds = new Set(data.projects.map((project) => project.id));
+function extractProjectIds(source) {
+  return [...source.matchAll(/\bid:\s*"([^"]+)"/g)].map((match) => match[1]);
+}
+
+const projectIds = new Set([
+  ...data.projects.map((project) => project.id),
+  ...extractProjectIds(publicProjectsSource),
+  ...extractProjectIds(transportationSource),
+]);
+
 const urlFields = [];
 for (const project of data.projects) {
   if (project.sourceUrl) urlFields.push([`project ${project.id} sourceUrl`, project.sourceUrl]);
   for (const link of project.links ?? []) urlFields.push([`project ${project.id} link`, link.url]);
+}
+
+for (const source of [publicProjectsSource, transportationSource]) {
+  for (const match of source.matchAll(/\b(?:sourceUrl|url):\s*"(https:\/\/[^"\n]+)"/g)) {
+    urlFields.push(["catalog source URL", match[1]]);
+  }
 }
 
 for (const [label, value] of urlFields) {
@@ -62,5 +81,5 @@ if (status.successfulSources < 1) {
   throw new Error("No official event source completed successfully.");
 }
 
-console.log(`Validated ${data.projects.length} projects, ${eventBlocks.length} events, and ${urlFields.length} source URLs.`);
+console.log(`Validated ${projectIds.size} catalog projects, ${eventBlocks.length} events, and ${urlFields.length} source URLs.`);
 console.log(`Event source health: ${status.successfulSources} successful, ${status.failedSources} failed.`);
