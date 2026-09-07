@@ -6,12 +6,14 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const sourcePath = path.join(ROOT, "data", "newton-source.json");
 const publicProjectsPath = path.join(ROOT, "data", "public-projects.ts");
 const transportationPath = path.join(ROOT, "data", "transportation-projects.ts");
+const highlightsPath = path.join(ROOT, "data", "project-highlights.ts");
 const eventsPath = path.join(ROOT, "data", "project-events.ts");
 const statusPath = path.join(ROOT, "data", "event-collection-status.json");
 
 const data = JSON.parse(await fs.readFile(sourcePath, "utf8"));
 const publicProjectsSource = await fs.readFile(publicProjectsPath, "utf8");
 const transportationSource = await fs.readFile(transportationPath, "utf8");
+const highlightsSource = await fs.readFile(highlightsPath, "utf8");
 const eventsSource = await fs.readFile(eventsPath, "utf8");
 const status = JSON.parse(await fs.readFile(statusPath, "utf8"));
 
@@ -43,10 +45,19 @@ for (const source of [publicProjectsSource, transportationSource]) {
   }
 }
 
+for (const match of highlightsSource.matchAll(/\{\s*label:\s*"([^"]+)"\s*,\s*value:\s*"([^"]+)"\s*,\s*sourceUrl:\s*"(https:\/\/[^"\n]+)"\s*\}/g)) {
+  urlFields.push([`project highlight ${match[1]}`, match[3]]);
+}
+
 for (const [label, value] of urlFields) {
   let parsed;
   try { parsed = new URL(value); } catch { throw new Error(`${label} is not a valid URL: ${value}`); }
   if (parsed.protocol !== "https:") throw new Error(`${label} must use HTTPS: ${value}`);
+}
+
+const highlightProjectIds = [...highlightsSource.matchAll(/^\s*"([^"]+)":\s*\[/gm)].map((match) => match[1]);
+for (const projectId of highlightProjectIds) {
+  if (!projectIds.has(projectId)) throw new Error(`Project highlights reference unknown project ${projectId}.`);
 }
 
 const eventBlocks = [...eventsSource.matchAll(/\{\s*id:\s*"([^"]+)"[\s\S]*?verified:\s*true,\s*\}/g)].map((match) => match[0]);
@@ -98,6 +109,6 @@ if (status.successfulSources < 1) {
   throw new Error("No official event source completed successfully.");
 }
 
-console.log(`Validated ${projectIds.size} catalog projects, ${eventBlocks.length} events, and ${urlFields.length} source URLs.`);
+console.log(`Validated ${projectIds.size} catalog projects, ${highlightProjectIds.length} highlighted projects, ${eventBlocks.length} events, and ${urlFields.length} source URLs.`);
 console.log(`Approved event hosts: ${[...allowedEventHosts].join(", ")}`);
 console.log(`Event source health: ${status.successfulSources} successful, ${status.failedSources} failed.`);
