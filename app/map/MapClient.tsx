@@ -104,3 +104,30 @@ export default function MapClient({ projects }: Props) {
     void renderMap();
     return () => { cancelled = true; };
   }, [filteredProjects, locations, locationProgress]);
+
+  return (
+    <div className="space-y-4">
+      <div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-slate-100">
+        {!mapReady && !mapError && (
+          <div className="absolute inset-0 z-20 flex items-center justify-center bg-white/95">
+            <div className="w-full max-w-md px-6 text-center">
+              <p className="text-sm font-semibold text-slate-900">Locating project locations</p>
+              <p className="mt-1 text-sm text-slate-600">{locationMessage}</p>
+              <div className="mt-4 h-2 overflow-hidden rounded-full bg-slate-200">
+                <div className="h-full rounded-full bg-slate-800 transition-all" style={{ width: `${locationProgress}%` }} />
+              </div>
+              <p className="mt-2 text-xs font-medium text-slate-500">{locationProgress}%</p>
+            </div>
+          </div>
+        )}
+        {mapError && <div className="absolute inset-0 z-20 flex items-center justify-center bg-white/95 p-6 text-center text-sm text-slate-700">{mapError}</div>}
+        <div id="newton-project-map" className="h-[70vh] min-h-[520px] w-full" />
+      </div>
+      {selectedId && (
+        <div className="text-sm text-slate-600">
+          Selected project: <Link className="font-semibold text-slate-900 underline" href={`/projects/${encodeURIComponent(selectedId)}`}>{projects.find((p) => p.id === selectedId)?.name ?? "Project"}</Link>
+        </div>
+      )}
+    </div>
+  );
+}
