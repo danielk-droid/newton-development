@@ -38,10 +38,10 @@ export default function MapClient({ projects }: Props) {
   useEffect(() => {
     let cancelled = false;
     async function loadLocations() {
-      setMapReady(false);
-      setMapError(null);
       const next: Record<string, Point> = { ...coordinatePoints };
       const pending = projects.filter((project) => !next[project.id]);
+      setMapReady(false);
+      setMapError(null);
       setLocationProgress(pending.length ? 0 : 100);
       setLocationMessage(pending.length ? "Locating projects from official Newton GIS" : "Using saved official GIS locations");
 
@@ -53,7 +53,7 @@ export default function MapClient({ projects }: Props) {
           const data = await response.json();
           if (data.location) next[project.id] = data.location;
         } catch {
-          // Keep going so one unavailable record cannot hide the rest of the map.
+          // Continue so one unavailable record cannot prevent the rest of the map from loading.
         }
         if (!cancelled) {
           const completed = index + 1;
@@ -62,31 +62,44 @@ export default function MapClient({ projects }: Props) {
         }
       }
 
-      if (cancelled) return;
-      setLocations(next);
+      if (!cancelled) {
+        setLocations(next);
+        setLocationProgress(100);
+        setLocationMessage(`Located ${Object.keys(next).length} project locations`);
+      }
+    }
+    void loadLocations();
+    return () => { cancelled = true; };
+  }, [projects]);
+
+  useEffect(() => {
+    if (locationProgress < 100) return;
+    let cancelled = false;
+    async function renderMap() {
       try {
         const L = await loadLeaflet();
+        if (cancelled) return;
         const element = document.getElementById("newton-project-map");
         if (!element) return;
         window.__newtonProjectMap?.remove();
         const map = L.map(element, { scrollWheelZoom: true }).setView([42.337, -71.209], 12.2);
         window.__newtonProjectMap = map;
         L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { attribution: "&copy; OpenStreetMap contributors", maxZoom: 19 }).addTo(map);
-        const visible = filteredProjects.filter((project) => next[project.id]);
+        const visible = filteredProjects.filter((project) => locations[project.id]);
         for (const project of visible) {
-          const point = next[project.id];
+          const point = locations[project.id];
           const icon = L.divIcon({ className: "newton-map-marker", html: markerIcon(project.type), iconSize: [34, 34], iconAnchor: [17, 17] });
           const locationLabel = point.exact === false ? "Reference location" : "Official GIS address";
           L.marker([point.lat, point.lon], { icon }).addTo(map)
             .bindPopup(`<strong>${escapeHtml(project.name)}</strong><br/><span>${escapeHtml(typeLabel(project.type))} · ${escapeHtml(project.status)}</span><br/><small>${locationLabel}: ${escapeHtml(point.matchedAddress)}</small><br/><a href="/projects/${encodeURIComponent(project.id)}">View project</a>`)
             .on("click", () => setSelectedId(project.id));
         }
-        if (visible.length > 0) map.fitBounds(L.latLngBounds(visible.map((project) => [next[project.id].lat, next[project.id].lon] as [number, number])).pad(0.08));
-        setMapReady(true);
+        if (visible.length > 0) map.fitBounds(L.latLngBounds(visible.map((project) => [locations[project.id].lat, locations[project.id].lon] as [number, number])).pad(0.08));
+        if (!cancelled) setMapReady(true);
       } catch (error) {
-        setMapError(error instanceof Error ? error.message : "The map could not be loaded.");
+        if (!cancelled) setMapError(error instanceof Error ? error.message : "The map could not be loaded.");
       }
     }
-    void loadLocations();
+    void renderMap();
     return () => { cancelled = true; };
-  }, [projects, filteredProjects]);
+  }, [filteredProjects, locations, locationProgress]);
