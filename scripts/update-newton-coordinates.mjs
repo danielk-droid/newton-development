@@ -16,6 +16,12 @@ const STREET_LAYER = `${GIS_BASE}/15/query`;
 const CITY_REFERENCE_ADDRESS = "1000 Commonwealth Avenue";
 const MIN_EXACT_LOCATION_RATIO = 0.25;
 
+// These are semantic location hints, not hand-entered map coordinates. The updater
+// still resolves the actual point from the official Newton GIS street-centerline layer.
+const LOCATION_HINTS = {
+  "newton-corner-improvements": ["Washington Street", "Centre Street"],
+};
+
 function normalize(value) {
   return String(value ?? "").toLowerCase().replace(/[.,]/g, " ").replace(/\s+/g, " ").trim();
 }
@@ -96,6 +102,14 @@ function geometryPoint(feature) {
   return Number.isFinite(x) && Number.isFinite(y) ? { lat: y, lon: x } : null;
 }
 
+function geometryPoints(feature) {
+  return (feature?.geometry?.paths ?? [])
+    .flatMap((path) => path)
+    .filter((point) => Array.isArray(point) && point.length >= 2)
+    .map((point) => [Number(point[0]), Number(point[1])])
+    .filter(([lon, lat]) => Number.isFinite(lon) && Number.isFinite(lat));
+}
+
 async function findAddress(address) {
   const parsed = parseExactAddress(address);
   if (!parsed) return null;
@@ -126,16 +140,47 @@ async function findFacility(name) {
   };
 }
 
-async function findStreet(name) {
+async function findStreetFeatures(name) {
   const normalized = normalize(name);
-  if (!normalized) return null;
-  const features = await query(STREET_LAYER, `UPPER(NAME) LIKE UPPER('%${quote(normalized)}%')`, "NAME,OBJECTID");
-  const points = features.flatMap((feature) => feature.geometry?.paths?.flat() ?? []).filter((point) => Array.isArray(point) && point.length >= 2);
+  if (!normalized) return [];
+  return query(STREET_LAYER, `UPPER(NAME) LIKE UPPER('%${quote(normalized)}%')`, "NAME,OBJECTID");
+}
+
+async function findStreet(name) {
+  const features = await findStreetFeatures(name);
+  const points = features.flatMap(geometryPoints);
   if (!points.length) return null;
-  const lon = points.reduce((sum, point) => sum + Number(point[0]), 0) / points.length;
-  const lat = points.reduce((sum, point) => sum + Number(point[1]), 0) / points.length;
-  if (!Number.isFinite(lat) || !Number.isFinite(lon)) return null;
-  return { lat, lon, matchedAddress: name, method: "official-street-centerline", exact: false };
+  const lon = points.reduce((sum, point) => sum + point[0], 0) / points.length;
+  const lat = points.reduce((sum, point) => sum + point[1], 0) / points.length;
+  return Number.isFinite(lat) && Number.isFinite(lon)
+    ? { lat, lon, matchedAddress: name, method: "official-street-centerline", exact: false }
+    : null;
+}
+
+async function findIntersection(names) {
+  if (names.length < 2) return null;
+  const featureGroups = await Promise.all(names.slice(0, 3).map(findStreetFeatures));
+  const pointGroups = featureGroups.map((features) => features.flatMap(geometryPoints));
+  if (pointGroups.some((points) => points.length === 0)) return null;
+
+  let best = null;
+  for (const first of pointGroups[0]) {
+    for (const second of pointGroups[1]) {
+      const distance = (first[0] - second[0]) ** 2 + (first[1] - second[1]) ** 2;
+      if (!best || distance < best.distance) best = { first, second, distance };
+    }
+  }
+  if (!best) return null;
+
+  const lon = (best.first[0] + best.second[0]) / 2;
+  const lat = (best.first[1] + best.second[1]) / 2;
+  return {
+    lat,
+    lon,
+    matchedAddress: names.slice(0, 2).join(" & "),
+    method: "official-intersection-reference",
+    exact: false,
+  };
 }
 
 const source = JSON.parse(await fs.readFile(SOURCE_PATH, "utf8"));
@@ -158,27 +203,19 @@ for (const project of projects) {
       point = await findFacility("Pellegrini");
     }
 
+    const hintedNames = LOCATION_HINTS[project.id] ?? [];
+    if (!point && hintedNames.length >= 2) {
+      point = await findIntersection(hintedNames);
+    }
+
     const names = splitLocationNames(project.address);
     if (!point && names.length > 1) {
-      const refs = [];
-      for (const name of names) {
-        const streetPoint = await findStreet(name);
-        if (streetPoint) refs.push(streetPoint);
-      }
-      if (refs.length) {
-        point = {
-          lat: refs.reduce((sum, item) => sum + item.lat, 0) / refs.length,
-          lon: refs.reduce((sum, item) => sum + item.lon, 0) / refs.length,
-          matchedAddress: refs.map((item) => item.matchedAddress).join(" & "),
-          method: "official-intersection-reference",
-          exact: false,
-        };
-      }
+      point = await findIntersection(names);
     }
 
     if (!point) point = await findStreet(project.address);
 
-    if (!point) {
+    if (!point && /citywide/i.test(project.address)) {
       cityReference ??= await findAddress(CITY_REFERENCE_ADDRESS);
       if (cityReference) {
         point = {
@@ -201,10 +238,7 @@ for (const project of projects) {
   }
 }
 
-if (resolved.length === 0) {
-  throw new Error("Official Newton GIS returned no project coordinates; refusing to publish coordinate data.");
-}
-
+if (resolved.length === 0) throw new Error("Official Newton GIS returned no project coordinates; refusing to publish coordinate data.");
 if (unresolved.length > 0) {
   throw new Error(`Official Newton GIS did not resolve ${unresolved.length} catalog projects; refusing to publish incomplete coordinate data.`);
 }
@@ -217,36 +251,28 @@ if (exactLocations / projects.length < MIN_EXACT_LOCATION_RATIO) {
 const checkedAt = new Date().toISOString();
 await fs.writeFile(
   OUTPUT_PATH,
-  `${JSON.stringify(
-    {
-      checkedAt,
-      source: `${GIS_BASE}/12, ${GIS_BASE}/13, and ${GIS_BASE}/15`,
-      sourceDescription: "City of Newton GIS address points, city facilities, and street centerlines",
-      projects: resolved,
-      unresolved,
-    },
-    null,
-    2,
-  )}\n`,
+  `${JSON.stringify({
+    checkedAt,
+    source: `${GIS_BASE}/12, ${GIS_BASE}/13, and ${GIS_BASE}/15`,
+    sourceDescription: "City of Newton GIS address points, city facilities, and street centerlines",
+    projects: resolved,
+    unresolved,
+  }, null, 2)}\n`,
   "utf8",
 );
 
 await fs.writeFile(
   STATUS_PATH,
-  `${JSON.stringify(
-    {
-      checkedAt,
-      source: `${GIS_BASE}/12, ${GIS_BASE}/13, and ${GIS_BASE}/15`,
-      totalProjects: projects.length,
-      resolvedProjects: resolved.length,
-      unresolvedProjects: unresolved.length,
-      exactLocations,
-      referenceLocations: resolved.filter((item) => !item.exact).length,
-      failures: unresolved,
-    },
-    null,
-    2,
-  )}\n`,
+  `${JSON.stringify({
+    checkedAt,
+    source: `${GIS_BASE}/12, ${GIS_BASE}/13, and ${GIS_BASE}/15`,
+    totalProjects: projects.length,
+    resolvedProjects: resolved.length,
+    unresolvedProjects: unresolved.length,
+    exactLocations,
+    referenceLocations: resolved.filter((item) => !item.exact).length,
+    failures: unresolved,
+  }, null, 2)}\n`,
   "utf8",
 );
 
