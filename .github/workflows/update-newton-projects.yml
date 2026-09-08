@@ -42,7 +42,7 @@ jobs:
       - name: Update Newton development data
         run: node scripts/update-newton-projects.mjs
       - name: Update official Newton GIS coordinates
-        run: node scripts/update-newton-coordinates-v2.mjs
+        run: node scripts/update-newton-coordinates-v3.mjs
       - name: Validate verified project highlights
         run: node scripts/validate-project-highlights.mjs
       - name: Validate public-facing copy
@@ -78,6 +78,7 @@ jobs:
           if(!Array.isArray(coordinates.projects)||!coordinates.projects.length) throw new Error("No Newton GIS project coordinates were resolved.");
           if(!coordinates.checkedAt) throw new Error("Newton GIS coordinate data is missing a checkedAt timestamp.");
           if(coordinateStatus.unresolvedProjects!==0||coordinateStatus.resolvedProjects!==coordinateStatus.totalProjects) throw new Error("GIS coordinate coverage is incomplete.");
+          if(coordinates.projects.some(p=>p.method==="official-citywide-reference"&&p.scope!=="citywide")) throw new Error("A non-citywide project received a citywide GIS reference.");
           if(!Array.isArray(eventStatus.sources)||!eventStatus.sources.length) throw new Error("Event collection produced no source health records.");
           if(eventsSucceeded&&(eventStatus.successfulSources!==eventStatus.sources.length||eventStatus.failedSources!==0)) throw new Error("Event collection reported success but one or more official sources failed.");
           console.log("Projects found:",data.projects.length); console.log("GIS coordinates:",coordinates.projects.length); console.log("GIS exact locations:",coordinateStatus.exactLocations); console.log("GIS reference locations:",coordinateStatus.referenceLocations); console.log("Event refresh succeeded:",eventsSucceeded);'
