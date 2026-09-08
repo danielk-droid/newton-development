@@ -5,172 +5,30 @@ import { fileURLToPath } from "node:url";
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const OUTPUT_PATH = path.join(ROOT, "data", "project-coordinates.json");
 const STATUS_PATH = path.join(ROOT, "data", "coordinate-collection-status.json");
-const SOURCE_FILES = [
-  path.join(ROOT, "data", "newton-source.json"),
-  path.join(ROOT, "data", "public-projects.ts"),
-  path.join(ROOT, "data", "transportation-projects.ts"),
-];
-
+const SOURCE_FILES = [path.join(ROOT, "data", "newton-source.json"),path.join(ROOT, "data", "public-projects.ts"),path.join(ROOT, "data", "transportation-projects.ts")];
 const GIS = "https://gisweb.newtonma.gov/server/rest/services/Data/MapServer";
-const ADDRESS = `${GIS}/12/query`;
-const FACILITY = `${GIS}/13/query`;
-const STREET = `${GIS}/15/query`;
+const ADDRESS = `${GIS}/12/query`, FACILITY = `${GIS}/13/query`, STREET = `${GIS}/15/query`;
 const PAGE = 2000;
 const CITY_REFERENCE = { lat: 42.337381453017024, lon: -71.20861513894442 };
-
-const HINTS = {
-  "newton-corner-improvements": ["Washington Street", "Centre Street"],
-};
-
+const HINTS = { "newton-corner-improvements": ["Washington Street", "Centre Street"] };
 const TYPE = "Street|St|Road|Rd|Avenue|Ave|Drive|Dr|Parkway|Pkwy|Place|Pl|Way|Lane|Ln|Court|Ct|Circle|Cir|Terrace|Ter|Boulevard|Blvd|Highway|Hwy|Roadway|Rte|Route";
-const TYPE_ALIAS = new Map(Object.entries({
-  street:"st",st:"st",road:"rd",rd:"rd",avenue:"ave",ave:"ave",drive:"dr",dr:"dr",
-  parkway:"pkwy",pkwy:"pkwy",place:"pl",pl:"pl",way:"way",lane:"ln",ln:"ln",court:"ct",ct:"ct",
-  circle:"cir",cir:"cir",terrace:"ter",ter:"ter",boulevard:"blvd",blvd:"blvd",highway:"hwy",hwy:"hwy",
-  roadway:"roadway",route:"rte",rte:"rte"
-}));
-
-function norm(v) {
-  return String(v ?? "").toLowerCase().replace(/[.,'’]/g, " ").replace(/\s+/g, " ").trim();
-}
-function streetKey(v) {
-  const t = norm(v).split(" ").filter(Boolean);
-  if (t.length && TYPE_ALIAS.has(t.at(-1))) t[t.length - 1] = TYPE_ALIAS.get(t.at(-1));
-  return t.join(" ");
-}
-function quote(v) { return String(v).replace(/'/g, "''"); }
-function parseProjects(text) {
-  const out=[];
-  const re=/\{[\s\S]*?\bid:\s*"([^"]+)"[\s\S]*?\bname:\s*"([^"]+)"[\s\S]*?\baddress:\s*"([^"]+)"[\s\S]*?\}/g;
-  for (const m of text.matchAll(re)) out.push({id:m[1],name:m[2],address:m[3]});
-  return out;
-}
-async function readProjects() {
-  const groups=[];
-  for (const file of SOURCE_FILES) {
-    const text=await fs.readFile(file,"utf8");
-    groups.push(file.endsWith("newton-source.json") ? (JSON.parse(text).projects ?? []) : parseProjects(text));
-  }
-  const map=new Map();
-  for(const p of groups.flat()) if(p?.id&&p?.name&&p?.address) map.set(p.id,p);
-  return [...map.values()];
-}
-async function query(url, where, fields="*", geometry=true, offset=0) {
-  const q=new URLSearchParams({where,outFields:fields,returnGeometry:String(geometry),outSR:"4326",resultRecordCount:String(PAGE),resultOffset:String(offset),f:"json"});
-  const r=await fetch(`${url}?${q}`,{headers:{"User-Agent":"Newton Development GIS updater"}});
-  if(!r.ok) throw new Error(`Newton GIS HTTP ${r.status}`);
-  const d=await r.json();
-  if(d.error) throw new Error(d.error.message ?? "Newton GIS query failed");
-  return d;
-}
-async function queryAll(url,where,fields="*",geometry=true) {
-  const all=[]; let offset=0;
-  while(true){const d=await query(url,where,fields,geometry,offset); const f=d.features??[]; all.push(...f); if(!d.exceededTransferLimit||!f.length) break; offset+=f.length;}
-  return all;
-}
-function point(feature) {
-  const x=Number(feature?.geometry?.x), y=Number(feature?.geometry?.y);
-  return Number.isFinite(x)&&Number.isFinite(y)?{lat:y,lon:x}:null;
-}
-function paths(feature) {
-  return (feature?.geometry?.paths??[]).map(p=>p.map(x=>[Number(x[0]),Number(x[1])]).filter(x=>Number.isFinite(x[0])&&Number.isFinite(x[1]))).filter(p=>p.length>=2);
-}
-function attrsText(feature) {
-  return Object.values(feature?.attributes??{}).filter(v=>typeof v==="string").join(" | ");
-}
-function addressCandidates(address) {
-  const result=[];
-  const re=new RegExp(`\\b(\\d{1,5})(?:-\\d{1,5})?\\s+([A-Za-z0-9.'’\\-]+(?:\\s+[A-Za-z0-9.'’\\-]+){0,7}?)\\s+(${TYPE})\\b`,"gi");
-  for(const m of String(address).matchAll(re)) result.push({number:Number(m[1]),street:`${m[2]} ${m[3]}`});
-  return result.filter((x,i,a)=>a.findIndex(y=>`${y.number}|${streetKey(y.street)}`===`${x.number}|${streetKey(x.street)}`)===i);
-}
-function streetCandidates(text) {
-  const result=[];
-  const re=new RegExp(`\\b([A-Za-z0-9.'’\\-]+(?:\\s+[A-Za-z0-9.'’\\-]+){0,7}?)\\s+(${TYPE})\\b`,"gi");
-  for(const m of String(text).matchAll(re)) result.push(`${m[1]} ${m[2]}`);
-  return result.filter((x,i,a)=>a.findIndex(y=>streetKey(y)===streetKey(x))===i);
-}
-function geometryIntersection(a,b) {
-  const den=(a[0]-b[0])*(0)-(a[1]-b[1])*(0);
-  void den;
-  return null;
-}
-function segIntersection(a,b,c,d){
-  const den=(a[0]-b[0])*(c[1]-d[1])-(a[1]-b[1])*(c[0]-d[0]);
-  if(Math.abs(den)<1e-12)return null;
-  const ab=a[0]*b[1]-a[1]*b[0], cd=c[0]*d[1]-c[1]*d[0];
-  const x=(ab*(c[0]-d[0])-(a[0]-b[0])*cd)/den;
-  const y=(ab*(c[1]-d[1])-(a[1]-b[1])*cd)/den;
-  const between=(v,p,q)=>v>=Math.min(p,q)-1e-9&&v<=Math.max(p,q)+1e-9;
-  return between(x,a[0],b[0])&&between(y,a[1],b[1])&&between(x,c[0],d[0])&&between(y,c[1],d[1])?[x,y]:null;
-}
-function midpointOfStreet(features){
-  const pts=features.flatMap(paths).flat();
-  if(!pts.length)return null;
-  return {lat:pts.reduce((s,p)=>s+p[1],0)/pts.length,lon:pts.reduce((s,p)=>s+p[0],0)/pts.length};
-}
-function intersection(streetIndex,names){
-  if(names.length<2)return null;
-  const a=streetIndex.get(streetKey(names[0]))??[], b=streetIndex.get(streetKey(names[1]))??[];
-  for(const fa of a)for(const pa of paths(fa))for(let i=1;i<pa.length;i++)for(const fb of b)for(const pb of paths(fb))for(let j=1;j<pb.length;j++){
-    const hit=segIntersection(pa[i-1],pa[i],pb[j-1],pb[j]);
-    if(hit)return {lat:hit[1],lon:hit[0],matchedAddress:names.slice(0,2).join(" & "),method:"official-intersection-reference",exact:true};
-  }
-  return null;
-}
-function addressMatch(addressFeatures,address){
-  const candidates=addressCandidates(address); if(!candidates.length)return null;
-  for(const c of candidates){
-    const wanted=norm(`${c.number} ${c.street}`);
-    let best=null;
-    for(const f of addressFeatures){
-      const p=point(f); if(!p)continue;
-      const text=norm(attrsText(f));
-      if(text.includes(wanted)) {best={...p,matchedAddress:`${c.number} ${c.street}`,method:"official-address-point",exact:true};break;}
-      const numberToken=new RegExp(`\\b${c.number}\\b`).test(text);
-      const streetToken=norm(c.street).split(" ").slice(0,-1).every(t=>text.includes(t));
-      if(numberToken&&streetToken&&!best)best={...p,matchedAddress:`${c.number} ${c.street}`,method:"official-address-point",exact:true};
-    }
-    if(best)return best;
-  }
-  return null;
-}
-function facilityMatch(features,project){
-  const tokens=norm(project.name).split(" ").filter(x=>x.length>3&&!/project|improvement|renovation|facility|school|newton|development|construction|redevelopment/i.test(x));
-  if(!tokens.length)return null;
-  let best=null;
-  for(const f of features){const p=point(f);if(!p)continue;const text=norm(attrsText(f));const score=tokens.reduce((n,t)=>n+(text.includes(t)?1:0),0);if(score>=Math.max(1,Math.ceil(tokens.length*0.35))&&(!best||score>best.score))best={...p,score,text};}
-  return best?{lat:best.lat,lon:best.lon,matchedAddress:best.text.slice(0,160),method:"official-facility-reference",exact:false}:null;
-}
-function isCitywide(project){return /^citywide$/i.test(project.address)||/^newton,?\s*ma$/i.test(project.address);}
-async function main(){
-  const projects=await readProjects();
-  const [addresses,facilities,streets]=await Promise.all([
-    queryAll(ADDRESS,"1=1","*",true),
-    queryAll(FACILITY,"1=1","*",true),
-    queryAll(STREET,"1=1","*",true),
-  ]);
-  console.log(`Loaded ${addresses.length} address points, ${facilities.length} facilities, ${streets.length} street features from official Newton GIS.`);
-  const streetIndex=new Map();
-  for(const f of streets){const k=streetKey(f.attributes?.NAME);if(k){if(!streetIndex.has(k))streetIndex.set(k,[]);streetIndex.get(k).push(f);}}
-  const results=[]; const unresolved=[];
-  for(const project of projects){
-    let loc=null;
-    if(HINTS[project.id]) loc=intersection(streetIndex,HINTS[project.id]);
-    if(!loc)loc=addressMatch(addresses,project.address);
-    const names=streetCandidates(project.address);
-    if(!loc&&names.length>=2)loc=intersection(streetIndex,names);
-    if(!loc&&names.length===1){const p=midpointOfStreet(streetIndex.get(streetKey(names[0]))??[]);if(p)loc={...p,matchedAddress:names[0],method:"official-street-centerline-reference",exact:false};}
-    if(!loc)loc=facilityMatch(facilities,project);
-    if(!loc&&isCitywide(project))loc={...CITY_REFERENCE,matchedAddress:"Newton citywide reference",method:"official-citywide-reference",exact:false,scope:"citywide"};
-    if(!loc){unresolved.push(project);continue;}
-    results.push({id:project.id,lat:loc.lat,lon:loc.lon,matchedAddress:loc.matchedAddress,method:loc.method,exact:loc.exact,scope:loc.scope??"project"});
-  }
-  if(unresolved.length)throw new Error(`Official Newton GIS did not resolve ${unresolved.length} catalog projects: ${unresolved.map(x=>x.id).join(", ")}`);
-  const payload={checkedAt:new Date().toISOString(),source:"City of Newton GIS Data MapServer",sourceUrl:GIS,projects:results};
-  await fs.writeFile(OUTPUT_PATH,`${JSON.stringify(payload,null,2)}\n`);
-  await fs.writeFile(STATUS_PATH,`${JSON.stringify({checkedAt:payload.checkedAt,source:payload.source,sourceUrl:payload.sourceUrl,successful:true,totalProjects:projects.length,resolvedProjects:results.length,unresolvedProjects:0,methods:Object.fromEntries(results.reduce((m,r)=>(m.set(r.method,(m.get(r.method)??0)+1),m),new Map()))},null,2)}\n`);
-  console.log(`Resolved ${results.length}/${projects.length} projects.`);
-  console.log(`Exact locations: ${results.filter(x=>x.exact).length}. Reference locations: ${results.filter(x=>!x.exact).length}.`);
-}
+const TYPE_ALIAS = new Map(Object.entries({street:"st",st:"st",road:"rd",rd:"rd",avenue:"ave",ave:"ave",drive:"dr",dr:"dr",parkway:"pkwy",pkwy:"pkwy",place:"pl",pl:"pl",way:"way",lane:"ln",ln:"ln",court:"ct",ct:"ct",circle:"cir",cir:"cir",terrace:"ter",ter:"ter",boulevard:"blvd",blvd:"blvd",highway:"hwy",hwy:"hwy",roadway:"roadway",route:"rte",rte:"rte"}));
+function norm(v){return String(v??"").toLowerCase().replace(/[.,'’]/g," ").replace(/\s+/g," ").trim();}
+function streetKey(v){const t=norm(v).split(" ").filter(Boolean);if(t.length&&TYPE_ALIAS.has(t.at(-1)))t[t.length-1]=TYPE_ALIAS.get(t.at(-1));return t.join(" ");}
+function parseProjects(text){const out=[];const re=/\{[\s\S]*?\bid:\s*"([^"]+)"[\s\S]*?\bname:\s*"([^"]+)"[\s\S]*?\baddress:\s*"([^"]+)"[\s\S]*?\}/g;for(const m of text.matchAll(re))out.push({id:m[1],name:m[2],address:m[3]});return out;}
+async function readProjects(){const groups=[];for(const file of SOURCE_FILES){const text=await fs.readFile(file,"utf8");groups.push(file.endsWith("newton-source.json")?(JSON.parse(text).projects??[]):parseProjects(text));}const map=new Map();for(const p of groups.flat())if(p?.id&&p?.name&&p?.address)map.set(p.id,p);return [...map.values()];}
+async function query(url,where,fields="*",geometry=true,offset=0){const q=new URLSearchParams({where,outFields:fields,returnGeometry:String(geometry),outSR:"4326",resultRecordCount:String(PAGE),resultOffset:String(offset),f:"json"});const r=await fetch(`${url}?${q}`,{headers:{"User-Agent":"Newton Development GIS updater"}});if(!r.ok)throw new Error(`Newton GIS HTTP ${r.status}`);const d=await r.json();if(d.error)throw new Error(d.error.message??"Newton GIS query failed");return d;}
+async function queryAll(url,where,fields="*",geometry=true){const all=[];let offset=0;while(true){const d=await query(url,where,fields,geometry,offset);const f=d.features??[];all.push(...f);if(!d.exceededTransferLimit||!f.length)break;offset+=f.length;}return all;}
+function point(f){const x=Number(f?.geometry?.x),y=Number(f?.geometry?.y);return Number.isFinite(x)&&Number.isFinite(y)?{lat:y,lon:x}:null;}
+function paths(f){return(f?.geometry?.paths??[]).map(p=>p.map(x=>[Number(x[0]),Number(x[1])]).filter(x=>Number.isFinite(x[0])&&Number.isFinite(x[1]))).filter(p=>p.length>=2);}
+function attrsText(f){return Object.values(f?.attributes??{}).filter(v=>typeof v==="string").join(" | ");}
+function addressCandidates(address){const result=[];const re=new RegExp(`\\b(\\d{1,5})(?:-\\d{1,5})?\\s+([A-Za-z0-9.'’\\-]+(?:\\s+[A-Za-z0-9.'’\\-]+){0,7}?)\\s+(${TYPE})\\b`,"gi");for(const m of String(address).matchAll(re))result.push({number:Number(m[1]),street:`${m[2]} ${m[3]}`});return result.filter((x,i,a)=>a.findIndex(y=>`${y.number}|${streetKey(y.street)}`===`${x.number}|${streetKey(x.street)}`)===i);}
+function streetCandidates(text){const result=[];const re=new RegExp(`\\b([A-Za-z0-9.'’\\-]+(?:\\s+[A-Za-z0-9.'’\\-]+){0,7}?)\\s+(${TYPE})\\b`,"gi");for(const m of String(text).matchAll(re))result.push(`${m[1]} ${m[2]}`);return result.filter((x,i,a)=>a.findIndex(y=>streetKey(y)===streetKey(x))===i);}
+function segIntersection(a,b,c,d){const den=(a[0]-b[0])*(c[1]-d[1])-(a[1]-b[1])*(c[0]-d[0]);if(Math.abs(den)<1e-12)return null;const ab=a[0]*b[1]-a[1]*b[0],cd=c[0]*d[1]-c[1]*d[0];const x=(ab*(c[0]-d[0])-(a[0]-b[0])*cd)/den,y=(ab*(c[1]-d[1])-(a[1]-b[1])*cd)/den;const between=(v,p,q)=>v>=Math.min(p,q)-1e-9&&v<=Math.max(p,q)+1e-9;return between(x,a[0],b[0])&&between(y,a[1],b[1])&&between(x,c[0],d[0])&&between(y,c[1],d[1])?[x,y]:null;}
+function midpointOfStreet(features){const pts=features.flatMap(paths).flat();if(!pts.length)return null;return{lat:pts.reduce((s,p)=>s+p[1],0)/pts.length,lon:pts.reduce((s,p)=>s+p[0],0)/pts.length};}
+function intersection(index,names){if(names.length<2)return null;const a=index.get(streetKey(names[0]))??[],b=index.get(streetKey(names[1]))??[];for(const fa of a)for(const pa of paths(fa))for(let i=1;i<pa.length;i++)for(const fb of b)for(const pb of paths(fb))for(let j=1;j<pb.length;j++){const hit=segIntersection(pa[i-1],pa[i],pb[j-1],pb[j]);if(hit)return{lat:hit[1],lon:hit[0],matchedAddress:names.slice(0,2).join(" & "),method:"official-intersection-reference",exact:true};}return null;}
+function addressMatch(features,address){const candidates=addressCandidates(address);if(!candidates.length)return null;for(const c of candidates){const wanted=norm(`${c.number} ${c.street}`);let best=null;for(const f of features){const p=point(f);if(!p)continue;const text=norm(attrsText(f));if(text.includes(wanted)){best={...p,matchedAddress:`${c.number} ${c.street}`,method:"official-address-point",exact:true};break;}const numberToken=new RegExp(`\\b${c.number}\\b`).test(text);const streetToken=norm(c.street).split(" ").slice(0,-1).every(t=>text.includes(t));if(numberToken&&streetToken&&!best)best={...p,matchedAddress:`${c.number} ${c.street}`,method:"official-address-point",exact:true};}if(best)return best;}return null;}
+function facilityMatch(features,project){const tokens=norm(project.name).split(" ").filter(x=>x.length>3&&!/project|improvement|renovation|facility|school|newton|development|construction|redevelopment/i.test(x));if(!tokens.length)return null;let best=null;for(const f of features){const p=point(f);if(!p)continue;const text=norm(attrsText(f));const score=tokens.reduce((n,t)=>n+(text.includes(t)?1:0),0);if(score>=Math.max(1,Math.ceil(tokens.length*0.35))&&(!best||score>best.score))best={...p,score,text};}return best?{lat:best.lat,lon:best.lon,matchedAddress:best.text.slice(0,160),method:"official-facility-reference",exact:false}:null;}
+function isCitywide(p){return /^citywide$/i.test(p.address)||/^newton,?\s*ma$/i.test(p.address);}
+async function main(){const projects=await readProjects();const[addresses,facilities,streets]=await Promise.all([queryAll(ADDRESS,"1=1","*",true),queryAll(FACILITY,"1=1","*",true),queryAll(STREET,"1=1","*",true)]);console.log(`Loaded ${addresses.length} address points, ${facilities.length} facilities, ${streets.length} street features from official Newton GIS.`);const index=new Map();for(const f of streets){const k=streetKey(f.attributes?.NAME);if(k){if(!index.has(k))index.set(k,[]);index.get(k).push(f);}}const results=[],unresolved=[];for(const project of projects){let loc=null;if(HINTS[project.id])loc=intersection(index,HINTS[project.id]);if(!loc)loc=addressMatch(addresses,project.address);const names=streetCandidates(project.address);if(!loc&&names.length>=2)loc=intersection(index,names);if(!loc&&names.length===1){const p=midpointOfStreet(index.get(streetKey(names[0]))??[]);if(p)loc={...p,matchedAddress:names[0],method:"official-street-centerline-reference",exact:false};}if(!loc)loc=facilityMatch(facilities,project);if(!loc&&isCitywide(project))loc={...CITY_REFERENCE,matchedAddress:"Newton citywide reference",method:"official-citywide-reference",exact:false,scope:"citywide"};if(!loc){unresolved.push(project);continue;}results.push({id:project.id,lat:loc.lat,lon:loc.lon,matchedAddress:loc.matchedAddress,method:loc.method,exact:loc.exact,scope:loc.scope??"project"});}if(unresolved.length)throw new Error(`Official Newton GIS did not resolve ${unresolved.length} catalog projects: ${unresolved.map(x=>x.id).join(", ")}`);const exactLocations=results.filter(x=>x.exact).length,referenceLocations=results.length-exactLocations;const payload={checkedAt:new Date().toISOString(),source:"City of Newton GIS Data MapServer",sourceUrl:GIS,projects:results};await fs.writeFile(OUTPUT_PATH,`${JSON.stringify(payload,null,2)}\n`);await fs.writeFile(STATUS_PATH,`${JSON.stringify({checkedAt:payload.checkedAt,source:payload.source,sourceUrl:payload.sourceUrl,successful:true,totalProjects:projects.length,resolvedProjects:results.length,unresolvedProjects:0,exactLocations,referenceLocations,methods:Object.fromEntries(results.reduce((m,r)=>(m.set(r.method,(m.get(r.method)??0)+1),m),new Map()))},null,2)}\n`);console.log(`Resolved ${results.length}/${projects.length} projects.`);console.log(`Exact locations: ${exactLocations}. Reference locations: ${referenceLocations}.`);}
 main().catch(async error=>{console.error(error);await fs.writeFile(STATUS_PATH,`${JSON.stringify({checkedAt:new Date().toISOString(),source:"City of Newton GIS Data MapServer",sourceUrl:GIS,successful:false,error:error.message},null,2)}\n`).catch(()=>{});process.exitCode=1;});
