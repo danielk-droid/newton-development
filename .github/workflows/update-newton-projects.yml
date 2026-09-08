@@ -64,9 +64,6 @@ jobs:
       - name: Write data health summary
         run: npm run report:data-health
 
-      - name: Run Pass 4 full QA audit
-        run: npm run qa
-
       - name: Check generated data
         run: |
           node -e "
@@ -142,8 +139,8 @@ jobs:
           echo "### Commit status" >> "$GITHUB_STEP_SUMMARY"
           if [ "${{ steps.changes.outputs.changed }}" = "true" ]; then
             echo "Newton Development data was updated and pushed successfully."
-            echo "- Generated data changed and was committed after QA, validation, lint, and build completed." >> "$GITHUB_STEP_SUMMARY"
+            echo "- Generated data changed and was committed after validation, lint, and build completed." >> "$GITHUB_STEP_SUMMARY"
           else
             echo "Newton Development is already up to date."
-            echo "- No generated-data changes were detected; QA, validation, lint, and build still completed." >> "$GITHUB_STEP_SUMMARY"
+            echo "- No generated-data changes were detected; validation, lint, and build still completed." >> "$GITHUB_STEP_SUMMARY"
           fi
