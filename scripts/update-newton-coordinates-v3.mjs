@@ -19,6 +19,15 @@ const CITY_REFERENCE = { lat: 42.337381453017024, lon: -71.20861513894442 };
 const HINTS = {
   "newton-corner-improvements": ["Washington Street", "Centre Street"],
 };
+// Some project records use a site/project name instead of the address that is
+// indexed in the City's address layer. These are authoritative site addresses
+// from City project materials; coordinates are still resolved from official GIS.
+const ADDRESS_HINTS = {
+  "riverside-mbta-riverside-t-station-355-grove-st-and-399-grove-st-auburndale": ["355 Grove Street", "399 Grove Street"],
+  "necp-school-project": ["687 Watertown Street"],
+  "oak-hill-school-project": ["130 Wheeler Road"],
+  "police-department-facilities-improvements": ["1321 Washington Street", "25 Chestnut Street"],
+};
 const TYPE = "Street|St|Road|Rd|Avenue|Ave|Drive|Dr|Parkway|Pkwy|Place|Pl|Way|Lane|Ln|Court|Ct|Circle|Cir|Terrace|Ter|Boulevard|Blvd|Highway|Hwy|Roadway|Rte|Route";
 const TYPE_ALIAS = new Map(Object.entries({ street: "st", st: "st", road: "rd", rd: "rd", avenue: "ave", ave: "ave", drive: "dr", dr: "dr", parkway: "pkwy", pkwy: "pkwy", place: "pl", pl: "pl", way: "way", lane: "ln", ln: "ln", court: "ct", ct: "ct", circle: "cir", cir: "cir", terrace: "ter", ter: "ter", boulevard: "blvd", blvd: "blvd", highway: "hwy", hwy: "hwy", roadway: "roadway", route: "rte", rte: "rte" }));
 
@@ -89,8 +98,8 @@ function streetCandidates(text) {
   for (const match of String(text).matchAll(re)) result.push(`${match[1]} ${match[2]}`);
   return result.filter((item, index, all) => all.findIndex(other => streetKey(other) === streetKey(item)) === index);
 }
-function addressMatch(features, address) {
-  const candidates = addressCandidates(address);
+function addressMatch(features, addresses) {
+  const candidates = addresses.flatMap(addressCandidates);
   for (const candidate of candidates) {
     const number = String(candidate.number);
     const streetTokens = norm(candidate.street).split(" ").filter(token => !TYPE_ALIAS.has(token));
@@ -100,11 +109,10 @@ function addressMatch(features, address) {
       const p = point(feature);
       if (!p) continue;
       const text = norm(attrsText(feature));
-      if (!new RegExp(`\\b${number}\\b`).test(text)) continue;
+      if (!new RegExp(`\\b${number}(?:\\.0+)?\\b`).test(text)) continue;
       const matches = streetTokens.filter(token => text.includes(token)).length;
       // Newton's address layer stores address number and street name in separate
       // fields, and the street type is not always present in the same field.
-      // Number + the street-name tokens is therefore the authoritative match.
       if (matches >= 1 && matches > bestScore) {
         best = { ...p, matchedAddress: `${candidate.number} ${candidate.street}`, method: "official-address-point", exact: true };
         bestScore = matches;
@@ -141,14 +149,20 @@ function intersection(index, names) {
   return null;
 }
 function facilityMatch(features, project) {
-  const tokens = norm(project.name).split(" ").filter(token => token.length > 3 && !/project|improvement|renovation|facility|school|newton|development|construction|redevelopment/i.test(token));
+  const aliases = {
+    "police-department-facilities-improvements": ["police", "headquarters", "annex"],
+    "necp-school-project": ["necp", "early childhood", "watertown"],
+    "oak-hill-school-project": ["oak hill", "wheeler"],
+    "riverside-mbta-riverside-t-station-355-grove-st-and-399-grove-st-auburndale": ["riverside", "mbta", "grove"],
+  };
+  const tokens = [...new Set([...(aliases[project.id] ?? []), ...norm(project.name).split(" ").filter(token => token.length > 3 && !/project|improvement|renovation|facility|school|newton|development|construction|redevelopment/i.test(token))])];
   let best = null;
   for (const feature of features) {
     const p = point(feature);
     if (!p) continue;
     const text = norm(attrsText(feature));
-    const score = tokens.reduce((sum, token) => sum + (text.includes(token) ? 1 : 0), 0);
-    if (score >= Math.max(1, Math.ceil(tokens.length * 0.35)) && (!best || score > best.score)) best = { ...p, score, text };
+    const score = tokens.reduce((sum, token) => sum + (text.includes(norm(token)) ? 1 : 0), 0);
+    if (score >= Math.max(1, Math.ceil(tokens.length * 0.25)) && (!best || score > best.score)) best = { ...p, score, text };
   }
   return best ? { lat: best.lat, lon: best.lon, matchedAddress: best.text.slice(0, 160), method: "official-facility-reference", exact: false } : null;
 }
@@ -171,8 +185,9 @@ async function main() {
   for (const project of projects) {
     let location = null;
     if (HINTS[project.id]) location = intersection(streetIndex, HINTS[project.id]);
-    if (!location) location = addressMatch(addresses, project.address);
-    const names = streetCandidates(project.address);
+    const addressesToTry = [project.address, ...(ADDRESS_HINTS[project.id] ?? [])];
+    if (!location) location = addressMatch(addresses, addressesToTry);
+    const names = streetCandidates(addressesToTry.join("; "));
     if (!location && names.length >= 2) location = intersection(streetIndex, names);
     if (!location && names.length === 1) {
       const p = midpoint(streetIndex.get(streetKey(names[0])) ?? []);
