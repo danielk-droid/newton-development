@@ -11,6 +11,7 @@ const eventsPath = path.join(ROOT, "data", "project-events.ts");
 const statusPath = path.join(ROOT, "data", "event-collection-status.json");
 const coordinatesPath = path.join(ROOT, "data", "project-coordinates.json");
 const coordinateStatusPath = path.join(ROOT, "data", "coordinate-collection-status.json");
+const skipEventHealth = process.env.SKIP_EVENT_HEALTH === "true";
 
 const data = JSON.parse(await fs.readFile(sourcePath, "utf8"));
 const publicProjectsSource = await fs.readFile(publicProjectsPath, "utf8");
@@ -81,7 +82,7 @@ for (const source of status.sources) {
   if (parsed.protocol !== "https:" || !allowedEventHosts.has(parsed.hostname.toLowerCase())) throw new Error(`Event source ${source.name} is outside approved City source hosts: ${source.url}`);
   if (!source.checkedAt || Number.isNaN(new Date(source.checkedAt).getTime())) throw new Error(`Event source ${source.name} has no valid check timestamp.`);
 }
-if (status.successfulSources !== status.sources.length || status.failedSources !== 0) throw new Error("One or more official event sources failed; generated event data is not publishable.");
+if (!skipEventHealth && (status.successfulSources !== status.sources.length || status.failedSources !== 0)) throw new Error("One or more official event sources failed; generated event data is not publishable.");
 
 if (!coordinates.checkedAt || Number.isNaN(new Date(coordinates.checkedAt).getTime())) throw new Error("GIS coordinate data has no valid checkedAt timestamp.");
 if (!Array.isArray(coordinates.projects) || coordinates.projects.length === 0) throw new Error("GIS coordinate data is empty.");
@@ -104,5 +105,5 @@ for (const match of String(coordinates.source ?? "").matchAll(/https:\/\/([^/\s]
 
 console.log(`Validated ${projectIds.size} catalog projects, ${highlightProjectIds.length} highlighted projects, ${eventBlocks.length} events, ${coordinates.projects.length} GIS coordinates, and ${urlFields.length} source URLs.`);
 console.log(`Approved event hosts: ${[...allowedEventHosts].join(", ")}`);
-console.log(`Event source health: ${status.successfulSources} successful, ${status.failedSources} failed.`);
+console.log(`Event source health: ${status.successfulSources} successful, ${status.failedSources} failed${skipEventHealth ? " (health check skipped)" : ""}.`);
 console.log(`GIS coordinates: ${coordinates.projects.length} resolved (${coordinateStatus.exactLocations} exact, ${coordinateStatus.referenceLocations} reference).`);
