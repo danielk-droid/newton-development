@@ -8,10 +8,11 @@ const source = await readJson("newton-source.json");
 const events = await readJson("event-collection-status.json");
 const coordinates = await readJson("project-coordinates.json");
 const coordinateStatus = await readJson("coordinate-collection-status.json");
+const skipEventHealth = process.env.SKIP_EVENT_HEALTH === "true";
 
 const checkedAt = [source.fetchedAt, events.checkedAt, coordinates.checkedAt, coordinateStatus.checkedAt];
 for (const value of checkedAt) if (!value || Number.isNaN(new Date(value).getTime())) throw new Error("Generated data is missing a valid collection timestamp.");
-if (events.failedSources !== 0 || events.successfulSources !== events.sources?.length) throw new Error("Official event-source monitoring is degraded.");
+if (!skipEventHealth && (events.failedSources !== 0 || events.successfulSources !== events.sources?.length)) throw new Error("Official event-source monitoring is degraded.");
 if (coordinateStatus.unresolvedProjects !== 0) throw new Error("Official GIS coordinate monitoring found unresolved projects.");
 if (coordinateStatus.resolvedProjects !== coordinateStatus.totalProjects) throw new Error("GIS coordinate coverage is incomplete.");
 if (coordinates.projects?.length !== coordinateStatus.resolvedProjects) throw new Error("GIS coordinate output and monitor status disagree.");
@@ -20,7 +21,7 @@ const lines = [
   "## Newton Development data refresh",
   "",
   `- Projects: ${source.projectCount} (fetched ${source.fetchedAt})`,
-  `- Official event sources: ${events.successfulSources}/${events.sources.length} healthy (checked ${events.checkedAt})`,
+  `- Official event sources: ${events.successfulSources}/${events.sources.length} healthy (checked ${events.checkedAt})${skipEventHealth ? "; health check skipped for core-data validation" : ""}`,
   `- GIS coordinates: ${coordinateStatus.resolvedProjects}/${coordinateStatus.totalProjects} resolved; ${coordinateStatus.exactLocations} exact, ${coordinateStatus.referenceLocations} reference (checked ${coordinates.checkedAt})`,
 ];
 console.log(lines.join("\n"));
