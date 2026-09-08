@@ -16,7 +16,9 @@ const FACILITY = `${GIS}/13/query`;
 const STREET = `${GIS}/15/query`;
 const PAGE = 2000;
 const CITY_REFERENCE = { lat: 42.337381453017024, lon: -71.20861513894442 };
-const HINTS = { "newton-corner-improvements": ["Washington Street", "Centre Street"] };
+const HINTS = {
+  "newton-corner-improvements": ["Washington Street", "Centre Street"],
+};
 const TYPE = "Street|St|Road|Rd|Avenue|Ave|Drive|Dr|Parkway|Pkwy|Place|Pl|Way|Lane|Ln|Court|Ct|Circle|Cir|Terrace|Ter|Boulevard|Blvd|Highway|Hwy|Roadway|Rte|Route";
 const TYPE_ALIAS = new Map(Object.entries({ street: "st", st: "st", road: "rd", rd: "rd", avenue: "ave", ave: "ave", drive: "dr", dr: "dr", parkway: "pkwy", pkwy: "pkwy", place: "pl", pl: "pl", way: "way", lane: "ln", ln: "ln", court: "ct", ct: "ct", circle: "cir", cir: "cir", terrace: "ter", ter: "ter", boulevard: "blvd", blvd: "blvd", highway: "hwy", hwy: "hwy", roadway: "roadway", route: "rte", rte: "rte" }));
 
@@ -87,36 +89,27 @@ function streetCandidates(text) {
   for (const match of String(text).matchAll(re)) result.push(`${match[1]} ${match[2]}`);
   return result.filter((item, index, all) => all.findIndex(other => streetKey(other) === streetKey(item)) === index);
 }
-function addressIndex(features) {
-  const index = new Map();
-  for (const feature of features) {
-    const p = point(feature);
-    if (!p) continue;
-    const text = norm(attrsText(feature));
-    const numbers = [...text.matchAll(/\b\d{1,5}\b/g)].map(match => match[0]);
-    for (const number of numbers) {
-      const key = `${number}|${text}`;
-      if (!index.has(key)) index.set(key, { ...p, text });
-    }
-  }
-  return index;
-}
 function addressMatch(features, address) {
   const candidates = addressCandidates(address);
   for (const candidate of candidates) {
     const number = String(candidate.number);
     const streetTokens = norm(candidate.street).split(" ").filter(token => !TYPE_ALIAS.has(token));
     let best = null;
+    let bestScore = 0;
     for (const feature of features) {
       const p = point(feature);
       if (!p) continue;
       const text = norm(attrsText(feature));
       if (!new RegExp(`\\b${number}\\b`).test(text)) continue;
       const matches = streetTokens.filter(token => text.includes(token)).length;
-      if (matches >= Math.max(1, streetTokens.length - 1)) {
+      // Newton's address layer stores address number and street name in separate
+      // fields, and the street type is not always present in the same field.
+      // Number + the street-name tokens is therefore the authoritative match.
+      if (matches >= 1 && matches > bestScore) {
         best = { ...p, matchedAddress: `${candidate.number} ${candidate.street}`, method: "official-address-point", exact: true };
-        break;
+        bestScore = matches;
       }
+      if (matches === streetTokens.length && matches > 0) break;
     }
     if (best) return best;
   }
