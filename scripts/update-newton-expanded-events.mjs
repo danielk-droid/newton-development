@@ -112,7 +112,14 @@ async function fetchPdfText(url) { assertAllowedCityUrl(url); const response = a
 async function collectSource(source, projects, checkedAt) {
   assertAllowedCityUrl(source.url); const firstPage = await fetchText(source.url); const pages = [{ url: source.url, html: firstPage }]; const firstLinks = extractLinks(firstPage);
   const childPages = firstLinks.filter((link) => isAllowedCityUrl(link.href) && !isPdf(link.href) && RELEVANT_PAGE_PATTERNS.some((pattern) => pattern.test(`${link.title} ${link.text}`)));
-  for (const link of childPages.slice(0, 10)) { if (pages.some((page) => page.url === link.href)) continue; try { pages.push({ url: link.href, html: await fetchText(link.href) }); } catch (error) { console.log(`  Could not read linked page ${link.href}: ${error.message}`); } }
+  for (const link of childPages.slice(0, 10)) {
+    if (pages.some((page) => page.url === link.href)) continue;
+    try {
+      pages.push({ url: link.href, html: await fetchText(link.href) });
+    } catch (error) {
+      throw new Error(`Could not read relevant official page ${link.href}: ${error.message}`);
+    }
+  }
   const pdfLinks = []; for (const page of pages) for (const link of extractLinks(page.html)) if (isAllowedCityUrl(link.href) && isPdf(link.href) && isRelevantPdfTitle(link.title || link.text)) pdfLinks.push(link);
   const uniquePdfLinks = [...new Map(pdfLinks.map((link) => [link.href, link])).values()]; const discovered = [];
   for (const link of uniquePdfLinks) {
@@ -121,7 +128,9 @@ async function collectSource(source, projects, checkedAt) {
       const matches = projects.map((project) => ({ project, evidence: projectMatchEvidence(combined, project) })).filter((item) => item.evidence.matched); if (matches.length === 0) continue;
       const date = parseDate(`${title}\n${pdfText}`); if (!date) continue;
       for (const { project, evidence } of matches) { const type = detectType(title, pdfText, evidence.evidence); if (!type) continue; const body = bodyName(title, source); discovered.push({ id: createEventId(project.id, date, type, link.href), projectId: project.id, date, title: type === "Hearing" ? `${body} hearing — ${project.name}` : type === "Notice" ? `${body} notice — ${project.name}` : type === "Decision" ? `${body} decision — ${project.name}` : `${body} meeting — ${project.name}`, description: type === "Hearing" ? `An official ${body} record identifies a public hearing concerning this project record.` : type === "Notice" ? `An official ${body} notice concerns this project record.` : type === "Decision" ? `An official ${body} record identifies a decision or vote concerning this project record.` : `An official ${body} agenda includes this project record.`, type, sourceUrl: link.href, participationUrl: link.href, matchedAddress: evidence.evidence, sourceCheckedAt: checkedAt, verified: true }); }
-    } catch (error) { console.log(`  Could not read ${link.href}: ${error.message}`); }
+    } catch (error) {
+      throw new Error(`Could not read relevant official document ${link.href}: ${error.message}`);
+    }
   }
   return discovered;
 }

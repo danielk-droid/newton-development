@@ -10,6 +10,11 @@ on:
   schedule:
     - cron: "0 6 * * *"
   workflow_dispatch:
+    inputs:
+      reason:
+        description: "Optional reason for this manual refresh"
+        required: false
+        type: string
 
 permissions:
   contents: write
@@ -56,6 +61,9 @@ jobs:
       - name: Validate data integrity
         run: npm run validate:data
 
+      - name: Write data health summary
+        run: npm run report:data-health
+
       - name: Check generated data
         run: |
           node -e "
@@ -67,11 +75,12 @@ jobs:
 
           if (!Array.isArray(data.projects) || data.projects.length === 0) throw new Error('Newton project data is empty.');
           if (!Array.isArray(eventStatus.sources) || eventStatus.sources.length === 0) throw new Error('Event collection produced no source health records.');
-          if (eventStatus.successfulSources === 0) throw new Error('All official event sources failed.');
+          if (eventStatus.successfulSources !== eventStatus.sources.length || eventStatus.failedSources !== 0) throw new Error('One or more official event sources failed.');
           if (!coordinates.checkedAt || !Array.isArray(coordinates.projects)) throw new Error('Newton GIS coordinate data is missing.');
           if (coordinates.projects.length === 0) throw new Error('No Newton GIS project coordinates were resolved.');
           if (!Number.isInteger(coordinateStatus.totalProjects) || coordinateStatus.totalProjects <= 0) throw new Error('Coordinate status is malformed.');
           if (coordinateStatus.resolvedProjects !== coordinates.projects.length) throw new Error('Coordinate status does not match generated GIS data.');
+          if (coordinateStatus.unresolvedProjects !== 0 || coordinateStatus.resolvedProjects !== coordinateStatus.totalProjects) throw new Error('GIS coordinate coverage is incomplete.');
 
           console.log('Projects found:', data.projects.length);
           console.log('GIS coordinates:', coordinates.projects.length);
@@ -106,7 +115,7 @@ jobs:
           else
             echo "changed=true" >> "$GITHUB_OUTPUT"
             echo "Changes detected."
-            git diff --stat -- data/newton-source.json data/projects.ts data/project-events.ts data/event-collection-status.json data/project-coordinates.json
+            git diff --stat -- data/newton-source.json data/projects.ts data/project-events.ts data/event-collection-status.json data/project-coordinates.json data/coordinate-collection-status.json
           fi
 
       - name: Commit updated data
@@ -127,8 +136,11 @@ jobs:
 
       - name: Report result
         run: |
+          echo "### Commit status" >> "$GITHUB_STEP_SUMMARY"
           if [ "${{ steps.changes.outputs.changed }}" = "true" ]; then
             echo "Newton Development data was updated and pushed successfully."
+            echo "- Generated data changed and was committed after validation, lint, and build completed." >> "$GITHUB_STEP_SUMMARY"
           else
             echo "Newton Development is already up to date."
+            echo "- No generated-data changes were detected; validation, lint, and build still completed." >> "$GITHUB_STEP_SUMMARY"
           fi

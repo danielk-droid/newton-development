@@ -81,7 +81,7 @@ for (const source of status.sources) {
   if (parsed.protocol !== "https:" || !allowedEventHosts.has(parsed.hostname.toLowerCase())) throw new Error(`Event source ${source.name} is outside approved City source hosts: ${source.url}`);
   if (!source.checkedAt || Number.isNaN(new Date(source.checkedAt).getTime())) throw new Error(`Event source ${source.name} has no valid check timestamp.`);
 }
-if (status.successfulSources < 1) throw new Error("No official event source completed successfully.");
+if (status.successfulSources !== status.sources.length || status.failedSources !== 0) throw new Error("One or more official event sources failed; generated event data is not publishable.");
 
 if (!coordinates.checkedAt || Number.isNaN(new Date(coordinates.checkedAt).getTime())) throw new Error("GIS coordinate data has no valid checkedAt timestamp.");
 if (!Array.isArray(coordinates.projects) || coordinates.projects.length === 0) throw new Error("GIS coordinate data is empty.");
@@ -97,6 +97,8 @@ if (!coordinateStatus.checkedAt || Number.isNaN(new Date(coordinateStatus.checke
 if (coordinateStatus.resolvedProjects !== coordinates.projects.length) throw new Error("GIS coordinate status does not match generated coordinates.");
 if (!Number.isInteger(coordinateStatus.totalProjects) || coordinateStatus.totalProjects <= 0) throw new Error("GIS coordinate status has an invalid project count.");
 if (coordinateStatus.exactLocations + coordinateStatus.referenceLocations !== coordinateStatus.resolvedProjects) throw new Error("GIS coordinate status location counts do not reconcile.");
+if (coordinateStatus.unresolvedProjects !== 0 || coordinateStatus.resolvedProjects !== coordinateStatus.totalProjects) throw new Error("GIS coordinate refresh is incomplete.");
+if (coordinateStatus.exactLocations / coordinateStatus.totalProjects < 0.25) throw new Error("GIS coordinate refresh has too few exact official matches.");
 if (!String(coordinates.source ?? "").includes("gisweb.newtonma.gov")) throw new Error("GIS coordinate source is not the official Newton GIS host.");
 for (const match of String(coordinates.source ?? "").matchAll(/https:\/\/([^/\s]+)/g)) if (!allowedCoordinateHosts.has(match[1].toLowerCase())) throw new Error(`GIS coordinate source uses an unapproved host: ${match[1]}`);
 

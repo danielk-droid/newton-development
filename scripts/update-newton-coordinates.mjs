@@ -14,6 +14,7 @@ const ADDRESS_LAYER = `${GIS_BASE}/12/query`;
 const FACILITY_LAYER = `${GIS_BASE}/13/query`;
 const STREET_LAYER = `${GIS_BASE}/15/query`;
 const CITY_REFERENCE_ADDRESS = "1000 Commonwealth Avenue";
+const MIN_EXACT_LOCATION_RATIO = 0.25;
 
 function normalize(value) {
   return String(value ?? "").toLowerCase().replace(/[.,]/g, " ").replace(/\s+/g, " ").trim();
@@ -82,6 +83,13 @@ async function query(url, where, outFields) {
   return data.features ?? [];
 }
 
+async function assertOfficialLayersAvailable() {
+  for (const [name, url] of [["address", ADDRESS_LAYER], ["facility", FACILITY_LAYER], ["street", STREET_LAYER]]) {
+    await query(url, "1=1", "OBJECTID");
+    console.log(`Official Newton GIS ${name} layer is available.`);
+  }
+}
+
 function geometryPoint(feature) {
   const x = Number(feature?.geometry?.x);
   const y = Number(feature?.geometry?.y);
@@ -135,6 +143,9 @@ const publicSource = await fs.readFile(PUBLIC_PATH, "utf8");
 const transportSource = await fs.readFile(TRANSPORT_PATH, "utf8");
 const projects = mergeProjects(source.projects ?? [], parseProjects(publicSource), parseProjects(transportSource));
 
+if (projects.length === 0) throw new Error("Newton project catalog is empty; refusing to generate GIS coordinates.");
+await assertOfficialLayersAvailable();
+
 const resolved = [];
 const unresolved = [];
 let cityReference = null;
@@ -186,16 +197,21 @@ for (const project of projects) {
       unresolved.push({ id: project.id, address: project.address, reason: "No official Newton GIS match" });
     }
   } catch (error) {
-    unresolved.push({
-      id: project.id,
-      address: project.address,
-      reason: error instanceof Error ? error.message : "Unknown GIS error",
-    });
+    throw new Error(`GIS lookup failed for ${project.id}; refusing to publish a partial coordinate refresh: ${error instanceof Error ? error.message : "Unknown GIS error"}`);
   }
 }
 
 if (resolved.length === 0) {
   throw new Error("Official Newton GIS returned no project coordinates; refusing to publish coordinate data.");
+}
+
+if (unresolved.length > 0) {
+  throw new Error(`Official Newton GIS did not resolve ${unresolved.length} catalog projects; refusing to publish incomplete coordinate data.`);
+}
+
+const exactLocations = resolved.filter((item) => item.exact).length;
+if (exactLocations / projects.length < MIN_EXACT_LOCATION_RATIO) {
+  throw new Error(`Only ${exactLocations} of ${projects.length} coordinates are exact official GIS matches; refusing a suspiciously low-quality refresh.`);
 }
 
 const checkedAt = new Date().toISOString();
@@ -224,7 +240,7 @@ await fs.writeFile(
       totalProjects: projects.length,
       resolvedProjects: resolved.length,
       unresolvedProjects: unresolved.length,
-      exactLocations: resolved.filter((item) => item.exact).length,
+      exactLocations,
       referenceLocations: resolved.filter((item) => !item.exact).length,
       failures: unresolved,
     },
@@ -235,6 +251,6 @@ await fs.writeFile(
 );
 
 console.log(`Resolved ${resolved.length} of ${projects.length} catalog projects from official Newton GIS.`);
-console.log(`Exact locations: ${resolved.filter((item) => item.exact).length}.`);
+console.log(`Exact locations: ${exactLocations}.`);
 console.log(`Reference locations: ${resolved.filter((item) => !item.exact).length}.`);
 console.log(`Unresolved: ${unresolved.length}.`);

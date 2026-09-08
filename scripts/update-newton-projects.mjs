@@ -6,6 +6,8 @@ const SOURCE_URL =
 const OUTPUT_FILE = "data/newton-source.json";
 
 const USER_AGENT = "NewtonDevelopment/1.0";
+const MIN_PROJECTS = 10;
+const MAX_PROJECT_LOSS_RATIO = 0.2;
 
 const VILLAGES = [
   "Auburndale",
@@ -484,6 +486,11 @@ async function main() {
     );
   }
 
+  const resolvedUrl = new URL(response.url);
+  if (resolvedUrl.protocol !== "https:" || !["www.newtonma.gov", "newtonma.gov"].includes(resolvedUrl.hostname.toLowerCase())) {
+    throw new Error(`Newton source redirected outside the official City site: ${response.url}`);
+  }
+
   const html = await response.text();
 
   console.log("Downloaded Newton page.");
@@ -494,9 +501,9 @@ async function main() {
     fetchedAt
   );
 
-  if (projects.length === 0) {
+  if (projects.length < MIN_PROJECTS) {
     throw new Error(
-      "No projects were extracted. The Newton page format may have changed."
+      `Only ${projects.length} projects were extracted (minimum ${MIN_PROJECTS}). The Newton page format may have changed.`
     );
   }
 
@@ -505,6 +512,13 @@ async function main() {
   );
 
   const previousData = await readPreviousData();
+
+  const previousCount = Number(previousData?.projectCount ?? previousData?.projects?.length ?? 0);
+  if (previousCount > 0 && projects.length < Math.ceil(previousCount * (1 - MAX_PROJECT_LOSS_RATIO))) {
+    throw new Error(
+      `Project count dropped from ${previousCount} to ${projects.length}; refusing to publish a potentially incomplete refresh.`,
+    );
+  }
 
   projects = preserveExistingLocation(
     projects,
