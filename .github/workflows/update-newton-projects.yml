@@ -46,9 +46,6 @@ jobs:
       - name: Update Newton development data
         run: node scripts/update-newton-projects.mjs
 
-      - name: Expand official project event coverage
-        run: node scripts/update-newton-expanded-events.mjs
-
       - name: Update official Newton GIS coordinates
         run: node scripts/update-newton-coordinates.mjs
 
@@ -58,10 +55,27 @@ jobs:
       - name: Validate public-facing copy
         run: npm run validate:copy
 
-      - name: Validate data integrity
+      - name: Validate core data and GIS integrity
+        env:
+          SKIP_EVENT_HEALTH: "true"
         run: npm run validate:data
 
-      - name: Write data health summary
+      - name: Write core data health summary
+        env:
+          SKIP_EVENT_HEALTH: "true"
+        run: npm run report:data-health
+
+      - name: Expand official project event coverage
+        id: events
+        continue-on-error: true
+        run: node scripts/update-newton-expanded-events.mjs
+
+      - name: Validate complete data integrity
+        if: steps.events.outcome == 'success'
+        run: npm run validate:data
+
+      - name: Write complete data health summary
+        if: steps.events.outcome == 'success'
         run: npm run report:data-health
 
       - name: Check generated data
@@ -72,21 +86,23 @@ jobs:
           const eventStatus = JSON.parse(fs.readFileSync('data/event-collection-status.json', 'utf8'));
           const coordinates = JSON.parse(fs.readFileSync('data/project-coordinates.json', 'utf8'));
           const coordinateStatus = JSON.parse(fs.readFileSync('data/coordinate-collection-status.json', 'utf8'));
+          const eventsSucceeded = process.env.EVENTS_SUCCEEDED === 'true';
 
           if (!Array.isArray(data.projects) || data.projects.length === 0) throw new Error('Newton project data is empty.');
-          if (!Array.isArray(eventStatus.sources) || eventStatus.sources.length === 0) throw new Error('Event collection produced no source health records.');
-          if (eventStatus.successfulSources !== eventStatus.sources.length || eventStatus.failedSources !== 0) throw new Error('One or more official event sources failed.');
-          if (!coordinates.checkedAt || !Array.isArray(coordinates.projects)) throw new Error('Newton GIS coordinate data is missing.');
-          if (coordinates.projects.length === 0) throw new Error('No Newton GIS project coordinates were resolved.');
+          if (!Array.isArray(coordinates.projects) || coordinates.projects.length === 0) throw new Error('No Newton GIS project coordinates were resolved.');
+          if (!coordinates.checkedAt) throw new Error('Newton GIS coordinate data is missing a checkedAt timestamp.');
           if (!Number.isInteger(coordinateStatus.totalProjects) || coordinateStatus.totalProjects <= 0) throw new Error('Coordinate status is malformed.');
           if (coordinateStatus.resolvedProjects !== coordinates.projects.length) throw new Error('Coordinate status does not match generated GIS data.');
           if (coordinateStatus.unresolvedProjects !== 0 || coordinateStatus.resolvedProjects !== coordinateStatus.totalProjects) throw new Error('GIS coordinate coverage is incomplete.');
+          if (!Array.isArray(eventStatus.sources) || eventStatus.sources.length === 0) throw new Error('Event collection produced no source health records.');
+          if (eventsSucceeded && (eventStatus.successfulSources !== eventStatus.sources.length || eventStatus.failedSources !== 0)) throw new Error('Event collection reported success but one or more official sources failed.');
 
           console.log('Projects found:', data.projects.length);
           console.log('GIS coordinates:', coordinates.projects.length);
           console.log('Event sources checked:', eventStatus.sources.length);
           console.log('Event sources successful:', eventStatus.successfulSources);
           console.log('Event sources failed:', eventStatus.failedSources);
+          console.log('Event refresh succeeded:', eventsSucceeded);
           console.log('Data source:', data.source);
           console.log('Fetched at:', data.fetchedAt);
           console.log('Event check:', eventStatus.checkedAt);
@@ -94,6 +110,8 @@ jobs:
           console.log('GIS exact locations:', coordinateStatus.exactLocations);
           console.log('GIS reference locations:', coordinateStatus.referenceLocations);
           "
+        env:
+          EVENTS_SUCCEEDED: ${{ steps.events.outcome == 'success' }}
 
       - name: Run lint
         run: npm run lint
@@ -109,19 +127,30 @@ jobs:
       - name: Check for changes
         id: changes
         run: |
-          if git diff --quiet -- data/newton-source.json data/projects.ts data/project-events.ts data/event-collection-status.json data/project-coordinates.json data/coordinate-collection-status.json; then
+          if [ "${{ steps.events.outcome }}" = "success" ]; then
+            FILES="data/newton-source.json data/projects.ts data/project-events.ts data/event-collection-status.json data/project-coordinates.json data/coordinate-collection-status.json"
+          else
+            FILES="data/newton-source.json data/projects.ts data/project-coordinates.json data/coordinate-collection-status.json"
+            echo "Event collection failed; event-generated files will not be published."
+          fi
+
+          if git diff --quiet -- $FILES; then
             echo "changed=false" >> "$GITHUB_OUTPUT"
-            echo "No generated Newton Development data changes detected."
+            echo "No publishable generated Newton Development data changes detected."
           else
             echo "changed=true" >> "$GITHUB_OUTPUT"
             echo "Changes detected."
-            git diff --stat -- data/newton-source.json data/projects.ts data/project-events.ts data/event-collection-status.json data/project-coordinates.json data/coordinate-collection-status.json
+            git diff --stat -- $FILES
           fi
 
       - name: Commit updated data
         if: steps.changes.outputs.changed == 'true'
         run: |
-          git add data/newton-source.json data/projects.ts data/project-events.ts data/event-collection-status.json data/project-coordinates.json data/coordinate-collection-status.json
+          if [ "${{ steps.events.outcome }}" = "success" ]; then
+            git add data/newton-source.json data/projects.ts data/project-events.ts data/event-collection-status.json data/project-coordinates.json data/coordinate-collection-status.json
+          else
+            git add data/newton-source.json data/projects.ts data/project-coordinates.json data/coordinate-collection-status.json
+          fi
           git commit -m "Update Newton development data"
 
       - name: Sync with latest main
@@ -137,10 +166,14 @@ jobs:
       - name: Report result
         run: |
           echo "### Commit status" >> "$GITHUB_STEP_SUMMARY"
-          if [ "${{ steps.changes.outputs.changed }}" = "true" ]; then
+          if [ "${{ steps.events.outcome }}" != "success" ]; then
+            echo "Event collection was unavailable, but the Newton project and GIS coordinate refresh completed and publishable core data was pushed."
+            echo "- Event-generated files were intentionally not published from this degraded refresh." >> "$GITHUB_STEP_SUMMARY"
+            echo "- GIS coordinate resolution remained blocking: incomplete or unresolved GIS data would fail the workflow before publishing." >> "$GITHUB_STEP_SUMMARY"
+          elif [ "${{ steps.changes.outputs.changed }}" = "true" ]; then
             echo "Newton Development data was updated and pushed successfully."
             echo "- Generated data changed and was committed after validation, lint, and build completed." >> "$GITHUB_STEP_SUMMARY"
           else
             echo "Newton Development is already up to date."
-            echo "- No generated-data changes were detected; validation, lint, and build still completed." >> "$GITHUB_STEP_SUMMARY"
+            echo "- No publishable generated-data changes were detected; validation, lint, and build still completed." >> "$GITHUB_STEP_SUMMARY"
           fi
