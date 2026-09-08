@@ -2,7 +2,9 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import ProjectStatusBadge from "../../components/ProjectStatusBadge";
+import ProjectGallery from "../../components/ProjectGallery";
 import { allProjects } from "../../../data/project-catalog";
+import { getProjectImages } from "../../../data/project-media";
 import eventCollectionStatus from "../../../data/event-collection-status.json";
 import { projectEvents, type ProjectEvent } from "../../../data/project-events";
 
@@ -48,6 +50,7 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
   const project = allProjects.find((item) => item.id === slug);
   if (!project) notFound();
 
+  const projectImages = getProjectImages(project.id, project.name);
   const lifecycleStages = getLifecycleStages(project.type);
   const currentStageIndex = getCurrentStageIndex(project.type, project.status);
   const events = sortEvents(projectEvents.filter((event) => event.projectId === project.id && event.verified === true));
@@ -80,6 +83,8 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
           <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Current status</p>
           <div className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"><div><h2 id="status-heading" className="text-2xl font-bold tracking-tight">{project.status}</h2><p className="mt-1 text-slate-600">{getStatusDescription(project.status)}</p></div><ProjectStatusBadge status={project.status} size="sm" /></div>
         </section>
+
+        <ProjectGallery projectName={project.name} images={projectImages} />
 
         {highlights.length > 0 && <section className="mt-10" aria-labelledby="facts-heading"><p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">{isPublicProject ? "Verified project facts" : "Verified development facts"}</p><h2 id="facts-heading" className="mt-2 text-3xl font-bold tracking-[-0.03em]">At a glance</h2><div className={`mt-6 grid gap-4 ${highlights.length === 1 ? "max-w-sm" : highlights.length === 2 ? "sm:grid-cols-2" : highlights.length === 3 ? "sm:grid-cols-2 lg:grid-cols-3" : "sm:grid-cols-2 lg:grid-cols-4"}`}>{highlights.map((fact) => <div key={`${fact.label}-${fact.value}`} className="rounded-2xl border border-slate-200 bg-white p-6 shadow-[0_1px_2px_rgba(15,23,42,0.04)]"><p className="text-sm font-medium text-slate-500">{fact.label}</p><p className="mt-2 text-xl font-bold leading-tight text-slate-950">{fact.value}</p><a href={fact.sourceUrl} target="_blank" rel="noopener noreferrer" className="mt-4 inline-flex text-xs font-bold text-slate-600 underline decoration-slate-300 underline-offset-4 hover:text-slate-950">Source ↗</a></div>)}</div></section>}
 
