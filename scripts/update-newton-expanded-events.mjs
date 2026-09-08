@@ -121,7 +121,7 @@ async function collectSource(source, projects, checkedAt) {
     }
   }
   const pdfLinks = []; for (const page of pages) for (const link of extractLinks(page.html)) if (isAllowedCityUrl(link.href) && isPdf(link.href) && isRelevantPdfTitle(link.title || link.text)) pdfLinks.push(link);
-  const uniquePdfLinks = [...new Map(pdfLinks.map((link) => [link.href, link])).values()]; const discovered = [];
+  const uniquePdfLinks = [...new Map(pdfLinks.map((link) => [link.href, link])).values()]; const discovered = []; const skippedDocuments = [];
   for (const link of uniquePdfLinks) {
     try {
       const title = cleanText(link.title || link.text); const pdfText = await fetchPdfText(link.href); const combined = `${title}\n${pdfText}`;
@@ -129,10 +129,16 @@ async function collectSource(source, projects, checkedAt) {
       const date = parseDate(`${title}\n${pdfText}`); if (!date) continue;
       for (const { project, evidence } of matches) { const type = detectType(title, pdfText, evidence.evidence); if (!type) continue; const body = bodyName(title, source); discovered.push({ id: createEventId(project.id, date, type, link.href), projectId: project.id, date, title: type === "Hearing" ? `${body} hearing — ${project.name}` : type === "Notice" ? `${body} notice — ${project.name}` : type === "Decision" ? `${body} decision — ${project.name}` : `${body} meeting — ${project.name}`, description: type === "Hearing" ? `An official ${body} record identifies a public hearing concerning this project record.` : type === "Notice" ? `An official ${body} notice concerns this project record.` : type === "Decision" ? `An official ${body} record identifies a decision or vote concerning this project record.` : `An official ${body} agenda includes this project record.`, type, sourceUrl: link.href, participationUrl: link.href, matchedAddress: evidence.evidence, sourceCheckedAt: checkedAt, verified: true }); }
     } catch (error) {
-      throw new Error(`Could not read relevant official document ${link.href}: ${error.message}`);
+      const message = error instanceof Error ? error.message : "Unknown error";
+      if (/HTTP 404\b/.test(message)) {
+        skippedDocuments.push({ url: link.href, reason: "Official source link returned HTTP 404" });
+        console.log(`  Skipped stale official document ${link.href}: ${message}`);
+        continue;
+      }
+      throw new Error(`Could not read relevant official document ${link.href}: ${message}`);
     }
   }
-  return discovered;
+  return { events: discovered, skippedDocuments };
 }
 function dedupe(events) { const map = new Map(); for (const event of events) { const key = `${event.projectId}|${event.date}|${event.type}|${event.sourceUrl}`; const existing = map.get(key); if (!existing || (!existing.participationUrl && event.participationUrl)) map.set(key, event); } return [...map.values()].sort((a, b) => a.date.localeCompare(b.date) || a.projectId.localeCompare(b.projectId) || a.sourceUrl.localeCompare(b.sourceUrl)); }
 
@@ -140,7 +146,7 @@ async function main() {
   const checkedAt = new Date().toISOString(); const projectData = JSON.parse(await fs.readFile(PROJECT_DATA_PATH, "utf8")); const publicProjectSource = await fs.readFile(PUBLIC_PROJECT_DATA_PATH, "utf8"); const transportationProjectSource = await fs.readFile(TRANSPORTATION_PROJECT_DATA_PATH, "utf8");
   const projects = mergeProjects(projectData.projects ?? [], parseCatalogProjects(publicProjectSource), parseCatalogProjects(transportationProjectSource)); if (!projects.length) throw new Error("Newton project catalog is empty.");
   const existing = parseExistingEvents(await fs.readFile(EVENTS_PATH, "utf8")); const discovered = []; const sourceResults = [];
-  for (const source of SOURCES) { try { const events = await collectSource(source, projects, checkedAt); discovered.push(...events); sourceResults.push({ name: source.name, url: source.url, ok: true, discovered: events.length, checkedAt }); console.log(`${source.name}: ${events.length} verified project events discovered.`); } catch (error) { sourceResults.push({ name: source.name, url: source.url, ok: false, discovered: 0, error: error.message, checkedAt }); console.log(`${source.name}: source failed — ${error.message}`); } }
+  for (const source of SOURCES) { try { const result = await collectSource(source, projects, checkedAt); discovered.push(...result.events); sourceResults.push({ name: source.name, url: source.url, ok: true, discovered: result.events.length, skippedDocuments: result.skippedDocuments, checkedAt }); console.log(`${source.name}: ${result.events.length} verified project events discovered; ${result.skippedDocuments.length} stale official documents skipped.`); } catch (error) { sourceResults.push({ name: source.name, url: source.url, ok: false, discovered: 0, error: error.message, checkedAt }); console.log(`${source.name}: source failed — ${error.message}`); } }
   if (sourceResults.length !== SOURCES.length) throw new Error("Event source health record count does not match configured sources.");
   if (sourceResults.some((source) => !source.ok)) throw new Error("One or more official Newton event sources failed; refusing to publish a partial refresh.");
   const combined = dedupe([...existing, ...discovered]); await fs.writeFile(EVENTS_PATH, serializeEvents(combined), "utf8");

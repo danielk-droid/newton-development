@@ -62,10 +62,6 @@ export const projectHighlights: Record<string, ProjectHighlight[]> = {
     { label: "Annual investment", value: "$9.5M", sourceUrl: "https://www.newtonma.gov/home/showpublisheddocument/138092/639129159798330000" },
     { label: "Program scope", value: "Roads, sidewalks, ADA ramps & bike facilities", sourceUrl: "https://www.newtonma.gov/government/public-works" },
   ],
-  "newton-commuter-rail-accessibility-improvements": [
-    { label: "Stations", value: "3 Newton commuter rail stations", sourceUrl: "https://www.newtonma.gov/government/planning/transportation-planning/projects" },
-    { label: "Purpose", value: "Accessibility improvements", sourceUrl: "https://www.newtonma.gov/government/planning/transportation-planning/projects" },
-  ],
   "needham-street-upgrades": [
     { label: "Corridor", value: "Webster St to Route 9", sourceUrl: "https://www.newtonma.gov/government/planning/transportation-planning/projects/needham-street" },
     { label: "Bike facilities", value: "Raised bike lanes + shared-use path", sourceUrl: "https://www.newtonma.gov/government/planning/transportation-planning/projects/needham-street" },

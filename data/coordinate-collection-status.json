@@ -1,0 +1,10 @@
+{
+  "checkedAt": "2026-09-08T00:15:11.295Z",
+  "source": "https://gisweb.newtonma.gov/server/rest/services/Data/MapServer/12, https://gisweb.newtonma.gov/server/rest/services/Data/MapServer/13, and https://gisweb.newtonma.gov/server/rest/services/Data/MapServer/15",
+  "totalProjects": 39,
+  "resolvedProjects": 39,
+  "unresolvedProjects": 0,
+  "exactLocations": 18,
+  "referenceLocations": 21,
+  "failures": []
+}

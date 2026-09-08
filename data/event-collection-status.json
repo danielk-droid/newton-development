@@ -1,6 +1,73 @@
 {
-  "checkedAt": "2026-09-04T00:00:00.000Z",
-  "sources": [],
-  "successfulSources": 0,
+  "checkedAt": "2026-09-08T00:20:32.192Z",
+  "allowedHosts": [
+    "www.newtonma.gov",
+    "apps.newtonma.gov"
+  ],
+  "catalogProjectsChecked": 39,
+  "sources": [
+    {
+      "name": "Newton Electronic Posting Board",
+      "url": "https://www.newtonma.gov/government/city-clerk/city-council/electronic-posting-board",
+      "ok": true,
+      "discovered": 2,
+      "skippedDocuments": [],
+      "checkedAt": "2026-09-08T00:20:32.192Z"
+    },
+    {
+      "name": "Newton Friday Packet Archives",
+      "url": "https://www.newtonma.gov/government/city-clerk/city-council/friday-packet/friday-packet-archives",
+      "ok": true,
+      "discovered": 22,
+      "skippedDocuments": [],
+      "checkedAt": "2026-09-08T00:20:32.192Z"
+    },
+    {
+      "name": "Planning and Development Board",
+      "url": "https://www.newtonma.gov/government/planning/boards-commissions/planning-and-development-board",
+      "ok": true,
+      "discovered": 0,
+      "skippedDocuments": [],
+      "checkedAt": "2026-09-08T00:20:32.192Z"
+    },
+    {
+      "name": "Urban Design Commission",
+      "url": "https://www.newtonma.gov/government/planning/boards-commissions/urban-design-commission",
+      "ok": true,
+      "discovered": 0,
+      "skippedDocuments": [],
+      "checkedAt": "2026-09-08T00:20:32.192Z"
+    },
+    {
+      "name": "Newton Historical Commission",
+      "url": "https://www.newtonma.gov/government/planning/divisions/historic-preservation/newton-historical-commission",
+      "ok": true,
+      "discovered": 4,
+      "skippedDocuments": [],
+      "checkedAt": "2026-09-08T00:20:32.192Z"
+    },
+    {
+      "name": "Historic Preservation and Local HDCs",
+      "url": "https://www.newtonma.gov/government/planning/historic-preservation",
+      "ok": true,
+      "discovered": 23,
+      "skippedDocuments": [
+        {
+          "url": "https://www.newtonma.gov/home/showpublisheddocument/137052/639095280937430000",
+          "reason": "Official source link returned HTTP 404"
+        },
+        {
+          "url": "https://www.newtonma.gov/home/showpublisheddocument/137012/639095272439770000",
+          "reason": "Official source link returned HTTP 404"
+        },
+        {
+          "url": "https://www.newtonma.gov/home/showpublisheddocument/136974/639095261251330000",
+          "reason": "Official source link returned HTTP 404"
+        }
+      ],
+      "checkedAt": "2026-09-08T00:20:32.192Z"
+    }
+  ],
+  "successfulSources": 6,
   "failedSources": 0
 }

@@ -278,7 +278,6 @@ export const publicProjects: PublicProject[] = [
       "https://www.newtonma.gov/government/public-buildings/capital-projects-investing-now-for-newton-s-future/municipal-facilities-projects/newton-center-for-active-living",
     links: [
       { label: "City Cooper Center project page", url: "https://www.newtonma.gov/government/public-buildings/capital-projects-investing-now-for-newton-s-future/municipal-facilities-projects/newton-center-for-active-living" },
-      { label: "Cooper project updates", url: "https://cooper.projects.nv5.com/" },
       { label: "City Public Buildings project list", url: PUBLIC_BUILDINGS_SOURCE },
     ],
     facts: {
