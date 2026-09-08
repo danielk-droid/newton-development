@@ -1,0 +1,50 @@
+name: Pass 4 QA
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pass-4-qa-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  qa:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Pass 4 audit
+        run: npm run qa
+
+      - name: Validate copy
+        run: npm run validate:copy
+
+      - name: Validate data integrity
+        run: npm run validate:data
+
+      - name: Report data health
+        run: npm run report:data-health
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Production build
+        run: npm run build
