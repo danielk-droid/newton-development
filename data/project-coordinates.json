@@ -1,263 +1,296 @@
 {
-  "checkedAt": "2026-09-08T00:15:11.295Z",
-  "source": "https://gisweb.newtonma.gov/server/rest/services/Data/MapServer/12, https://gisweb.newtonma.gov/server/rest/services/Data/MapServer/13, and https://gisweb.newtonma.gov/server/rest/services/Data/MapServer/15",
-  "sourceDescription": "City of Newton GIS address points, city facilities, and street centerlines",
+  "checkedAt": "2026-09-10T21:23:14.148Z",
+  "source": "https://gisweb.newtonma.gov/server/rest/services/Data/MapServer",
+  "sourceUrl": "https://gisweb.newtonma.gov/server/rest/services/Data/MapServer",
+  "sourceDescription": "City of Newton GIS Data MapServer: address points, city facilities, and street centerlines",
   "projects": [
     {
       "id": "528-boylston-street-rt-9-thompsonville",
       "lat": 42.31848887825683,
       "lon": -71.1910314265672,
-      "matchedAddress": "528 BOYLSTON ST",
+      "matchedAddress": "528 Boylston Street",
       "method": "official-address-point",
-      "exact": true
+      "exact": true,
+      "scope": "project"
     },
     {
       "id": "northland-charlemont-160-charlemont-st-newton-highlands",
       "lat": 42.30839250430706,
       "lon": -71.21301921914782,
-      "matchedAddress": "160 CHARLEMONT ST",
+      "matchedAddress": "160 Charlemont St",
       "method": "official-address-point",
-      "exact": true
+      "exact": true,
+      "scope": "project"
     },
     {
       "id": "38-crafts-street-newtonville",
       "lat": 42.35461495275447,
       "lon": -71.2008204972601,
-      "matchedAddress": "38 CRAFTS ST",
+      "matchedAddress": "38 Crafts Street",
       "method": "official-address-point",
-      "exact": true
+      "exact": true,
+      "scope": "project"
     },
     {
       "id": "78-crafts-street-newtonville",
       "lat": 42.3552875084099,
       "lon": -71.20238549735218,
-      "matchedAddress": "78R CRAFTS ST",
+      "matchedAddress": "78 Crafts Street",
       "method": "official-address-point",
-      "exact": true
+      "exact": true,
+      "scope": "project"
     },
     {
       "id": "riverside-mbta-riverside-t-station-355-grove-st-and-399-grove-st-auburndale",
-      "lat": 42.337381453017024,
-      "lon": -71.20861513894442,
-      "matchedAddress": "Newton citywide reference",
-      "method": "official-citywide-reference",
-      "exact": false
+      "lat": 42.33698746907022,
+      "lon": -71.2546795391346,
+      "matchedAddress": "355 Grove Street",
+      "method": "official-address-point",
+      "exact": true,
+      "scope": "project"
     },
     {
       "id": "134-hancock-street-and-161-163-and-169-grove-street-auburndale",
-      "lat": 42.337381453017024,
-      "lon": -71.20861513894442,
-      "matchedAddress": "Newton citywide reference",
-      "method": "official-citywide-reference",
-      "exact": false
+      "lat": 42.34170150875692,
+      "lon": -71.25023557288422,
+      "matchedAddress": "169 Grove Street",
+      "method": "official-address-point",
+      "exact": true,
+      "scope": "project"
     },
     {
       "id": "portion-of-former-walker-center-for-ecumenical-exchange-138-144-hancock-street-auburndale",
       "lat": 42.341672001646494,
       "lon": -71.25082258156854,
-      "matchedAddress": "138 HANCOCK ST",
+      "matchedAddress": "138 Hancock Street",
       "method": "official-address-point",
-      "exact": true
+      "exact": true,
+      "scope": "project"
     },
     {
       "id": "northland-needham-street-275-281-needham-st-156-oak-st-55-tower-rd-upper-falls-400-main-st-340-main-st",
-      "lat": 42.337381453017024,
-      "lon": -71.20861513894442,
-      "matchedAddress": "Newton citywide reference",
-      "method": "official-citywide-reference",
-      "exact": false
+      "lat": 42.308890651447776,
+      "lon": -71.21538464681926,
+      "matchedAddress": "275 Needham St",
+      "method": "official-address-point",
+      "exact": true,
+      "scope": "project"
     },
     {
       "id": "newton-gardens-acquisition-132-north-street-west-newton",
       "lat": 42.3635725298205,
       "lon": -71.21959389728599,
-      "matchedAddress": "132 NORTH ST",
+      "matchedAddress": "132 North Street",
       "method": "official-address-point",
-      "exact": true
+      "exact": true,
+      "scope": "project"
     },
     {
       "id": "41-washington-street-newton-corner",
       "lat": 42.35435570235175,
       "lon": -71.17530022007449,
-      "matchedAddress": "41 WASHINGTON ST",
+      "matchedAddress": "41 Washington Street",
       "method": "official-address-point",
-      "exact": true
+      "exact": true,
+      "scope": "project"
     },
     {
       "id": "west-newton-armory-1135-1137-washington-street-west-newton",
-      "lat": 42.337381453017024,
-      "lon": -71.20861513894442,
-      "matchedAddress": "Newton citywide reference",
-      "method": "official-citywide-reference",
-      "exact": false
+      "lat": 42.34971986216725,
+      "lon": -71.2201940511704,
+      "matchedAddress": "1135 Washington Street",
+      "method": "official-address-point",
+      "exact": true,
+      "scope": "project"
     },
     {
       "id": "dunstan-east-newton-crossing-1149-1185-washington-st-and-kempton-pl",
-      "lat": 42.34947942565852,
-      "lon": -71.22044538398082,
-      "matchedAddress": "1149 WASHINGTON ST",
+      "lat": 42.32218132604171,
+      "lon": -71.20690111771545,
+      "matchedAddress": "1149 Washington St and Kempton Pl",
       "method": "official-address-point",
-      "exact": true
+      "exact": true,
+      "scope": "project"
     },
     {
       "id": "386-390-watertown-street-nonantum",
-      "lat": 42.337381453017024,
-      "lon": -71.20861513894442,
-      "matchedAddress": "Newton citywide reference",
-      "method": "official-citywide-reference",
-      "exact": false
+      "lat": 42.360306836364096,
+      "lon": -71.20168202707953,
+      "matchedAddress": "386 Watertown Street",
+      "method": "official-address-point",
+      "exact": true,
+      "scope": "project"
     },
     {
       "id": "countryside-elementary-school-191-dedham-street",
       "lat": 42.313303853504436,
       "lon": -71.20242732970179,
-      "matchedAddress": "191 DEDHAM ST",
+      "matchedAddress": "191 Dedham Street",
       "method": "official-address-point",
-      "exact": true
+      "exact": true,
+      "scope": "project"
     },
     {
       "id": "franklin-elementary-school-125-derby-street",
       "lat": 42.358895059486336,
       "lon": -71.22984237955849,
-      "matchedAddress": "125 DERBY ST",
+      "matchedAddress": "125 Derby Street",
       "method": "official-address-point",
-      "exact": true
+      "exact": true,
+      "scope": "project"
     },
     {
       "id": "horace-mann-elementary-school-225-nevada-street",
       "lat": 42.36055136137792,
       "lon": -71.20883155960301,
-      "matchedAddress": "225 NEVADA ST",
+      "matchedAddress": "225 Nevada Street",
       "method": "official-address-point",
-      "exact": true
+      "exact": true,
+      "scope": "project"
     },
     {
       "id": "lincoln-eliot-elementary-school-150-jackson-road",
       "lat": 42.357952686993,
       "lon": -71.1942039768679,
-      "matchedAddress": "150 JACKSON RD",
+      "matchedAddress": "150 Jackson Road",
       "method": "official-address-point",
-      "exact": true
+      "exact": true,
+      "scope": "project"
     },
     {
       "id": "newton-south-high-school-redevelopment",
       "lat": 42.313681336062494,
       "lon": -71.18654002193284,
-      "matchedAddress": "140 BRANDEIS RD",
+      "matchedAddress": "140 Brandeis Road",
       "method": "official-address-point",
-      "exact": true
+      "exact": true,
+      "scope": "project"
     },
     {
       "id": "underwood-school-redevelopment",
       "lat": 42.35512916162501,
       "lon": -71.18370285150607,
-      "matchedAddress": "101 VERNON ST",
+      "matchedAddress": "101 Vernon Street",
       "method": "official-address-point",
-      "exact": true
+      "exact": true,
+      "scope": "project"
     },
     {
       "id": "ward-school-redevelopment",
-      "lat": 42.337381453017024,
-      "lon": -71.20861513894442,
-      "matchedAddress": "Newton citywide reference",
-      "method": "official-citywide-reference",
-      "exact": false
+      "lat": 42.35694359688134,
+      "lon": -71.2277914587763,
+      "matchedAddress": "Cherry Street",
+      "method": "official-street-centerline-reference",
+      "exact": false,
+      "scope": "project"
     },
     {
       "id": "cooper-center-for-active-living",
       "lat": 42.3491069127757,
       "lon": -71.20717739175214,
-      "matchedAddress": "345 WALNUT ST",
+      "matchedAddress": "345 Walnut Street",
       "method": "official-address-point",
-      "exact": true
+      "exact": true,
+      "scope": "project"
     },
     {
       "id": "gath-memorial-pool-renovation",
-      "lat": 42.337381453017024,
-      "lon": -71.20861513894442,
-      "matchedAddress": "Newton citywide reference",
-      "method": "official-citywide-reference",
-      "exact": false
+      "lat": 42.35757363822915,
+      "lon": -71.21594495158672,
+      "matchedAddress": "256 Albemarle Road",
+      "method": "official-address-point",
+      "exact": true,
+      "scope": "project"
     },
     {
       "id": "new-police-headquarters-and-training-facility",
-      "lat": 42.337381453017024,
-      "lon": -71.20861513894442,
-      "matchedAddress": "Newton citywide reference",
-      "method": "official-citywide-reference",
-      "exact": false
+      "lat": 42.349471575079136,
+      "lon": -71.22757795458868,
+      "matchedAddress": "15 | 33011 0001 | police headquarters | police | {0df68192-e3b5-4279-8244-106137aad89f}",
+      "method": "official-facility-reference",
+      "exact": false,
+      "scope": "project"
     },
     {
       "id": "pellegrini-park-field-house",
-      "lat": 42.358594784479024,
-      "lon": -71.20315215393292,
-      "matchedAddress": "Pellegrini Park Building",
-      "method": "official-facility-point",
-      "exact": true
+      "lat": 42.35188195978554,
+      "lon": -71.18075920646028,
+      "matchedAddress": "3 | 72009 0003 | burr park field house | rec | {b95ae204-a604-4e34-a01e-738f63d46749}",
+      "method": "official-facility-reference",
+      "exact": false,
+      "scope": "project"
     },
     {
       "id": "police-department-facilities-improvements",
-      "lat": 42.337381453017024,
-      "lon": -71.20861513894442,
-      "matchedAddress": "Newton citywide reference",
-      "method": "official-citywide-reference",
-      "exact": false
+      "lat": 42.3494665690794,
+      "lon": -71.22756979945916,
+      "matchedAddress": "1321 Washington Street",
+      "method": "official-address-point",
+      "exact": true,
+      "scope": "project"
     },
     {
       "id": "splash-park",
-      "lat": 42.337381453017024,
-      "lon": -71.20861513894442,
-      "matchedAddress": "Newton citywide reference",
-      "method": "official-citywide-reference",
-      "exact": false
+      "lat": 42.35188195978554,
+      "lon": -71.18075920646028,
+      "matchedAddress": "3 | 72009 0003 | burr park field house | rec | {b95ae204-a604-4e34-a01e-738f63d46749}",
+      "method": "official-facility-reference",
+      "exact": false,
+      "scope": "project"
     },
     {
       "id": "police-headquarters-parking-lot-security-improvement",
-      "lat": 42.337381453017024,
-      "lon": -71.20861513894442,
-      "matchedAddress": "Newton citywide reference",
-      "method": "official-citywide-reference",
-      "exact": false
+      "lat": 42.349471575079136,
+      "lon": -71.22757795458868,
+      "matchedAddress": "15 | 33011 0001 | police headquarters | police | {0df68192-e3b5-4279-8244-106137aad89f}",
+      "method": "official-facility-reference",
+      "exact": false,
+      "scope": "project"
     },
     {
       "id": "crafts-street-wash-bay",
-      "lat": 42.337381453017024,
-      "lon": -71.20861513894442,
-      "matchedAddress": "Newton citywide reference",
-      "method": "official-citywide-reference",
-      "exact": false
+      "lat": 42.35853287654967,
+      "lon": -71.21330953939514,
+      "matchedAddress": "Crafts Street",
+      "method": "official-street-centerline-reference",
+      "exact": false,
+      "scope": "project"
     },
     {
       "id": "necp-school-project",
-      "lat": 42.337381453017024,
-      "lon": -71.20861513894442,
-      "matchedAddress": "Newton citywide reference",
-      "method": "official-citywide-reference",
-      "exact": false
+      "lat": 42.35462770588786,
+      "lon": -71.21349097703622,
+      "matchedAddress": "687 Watertown Street",
+      "method": "official-address-point",
+      "exact": true,
+      "scope": "project"
     },
     {
       "id": "oak-hill-school-project",
-      "lat": 42.337381453017024,
-      "lon": -71.20861513894442,
-      "matchedAddress": "Newton citywide reference",
-      "method": "official-citywide-reference",
-      "exact": false
+      "lat": 42.31001998970615,
+      "lon": -71.19178538767147,
+      "matchedAddress": "130 Wheeler Road",
+      "method": "official-address-point",
+      "exact": true,
+      "scope": "project"
     },
     {
       "id": "nnhs-field-lights",
       "lat": 42.34517308219725,
       "lon": -71.21032829665063,
-      "matchedAddress": "360 LOWELL AVE",
+      "matchedAddress": "360 Lowell Avenue",
       "method": "official-address-point",
-      "exact": true
+      "exact": true,
+      "scope": "project"
     },
     {
       "id": "peirce-school-heating-system-improvements",
       "lat": 42.320485334861914,
       "lon": -71.18990516699606,
-      "matchedAddress": "170 JACKSON ST",
+      "matchedAddress": "170 Jackson Road",
       "method": "official-address-point",
-      "exact": true
+      "exact": true,
+      "scope": "project"
     },
     {
       "id": "transportation-network-improvement-program",
@@ -265,56 +298,62 @@
       "lon": -71.20861513894442,
       "matchedAddress": "Newton citywide reference",
       "method": "official-citywide-reference",
-      "exact": false
+      "exact": false,
+      "scope": "citywide"
     },
     {
       "id": "needham-street-upgrades",
-      "lat": 42.337381453017024,
-      "lon": -71.20861513894442,
-      "matchedAddress": "Newton citywide reference",
-      "method": "official-citywide-reference",
-      "exact": false
+      "lat": 42.3118022348112,
+      "lon": -71.21304023337804,
+      "matchedAddress": "Needham Street",
+      "method": "official-street-centerline-reference",
+      "exact": false,
+      "scope": "project"
     },
     {
       "id": "auburn-street-commonwealth-avenue-intersection-improvement",
-      "lat": 42.337381453017024,
-      "lon": -71.20861513894442,
-      "matchedAddress": "Newton citywide reference",
-      "method": "official-citywide-reference",
-      "exact": false
+      "lat": 42.34482736731537,
+      "lon": -71.24103120343749,
+      "matchedAddress": "Auburn Street & Commonwealth Avenue",
+      "method": "official-intersection-reference",
+      "exact": true,
+      "scope": "project"
     },
     {
       "id": "commonwealth-avenue-carriageway-redesign",
-      "lat": 42.337381453017024,
-      "lon": -71.20861513894442,
-      "matchedAddress": "Newton citywide reference",
-      "method": "official-citywide-reference",
-      "exact": false
+      "lat": 42.340374576449676,
+      "lon": -71.21848812494221,
+      "matchedAddress": "Commonwealth Avenue",
+      "method": "official-street-centerline-reference",
+      "exact": false,
+      "scope": "project"
     },
     {
       "id": "christina-street-bridge",
-      "lat": 42.337381453017024,
-      "lon": -71.20861513894442,
-      "matchedAddress": "Newton citywide reference",
-      "method": "official-citywide-reference",
-      "exact": false
+      "lat": 42.30634776085309,
+      "lon": -71.21223947862094,
+      "matchedAddress": "Christina Street",
+      "method": "official-street-centerline-reference",
+      "exact": false,
+      "scope": "project"
     },
     {
       "id": "hammond-pond-parkway-complete-street",
-      "lat": 42.337381453017024,
-      "lon": -71.20861513894442,
-      "matchedAddress": "Newton citywide reference",
-      "method": "official-citywide-reference",
-      "exact": false
+      "lat": 42.32458577222317,
+      "lon": -71.17548282806892,
+      "matchedAddress": "Hammond Pond Parkway",
+      "method": "official-street-centerline-reference",
+      "exact": false,
+      "scope": "project"
     },
     {
       "id": "newton-corner-improvements",
-      "lat": 42.337381453017024,
-      "lon": -71.20861513894442,
-      "matchedAddress": "Newton citywide reference",
-      "method": "official-citywide-reference",
-      "exact": false
+      "lat": 42.35740465754547,
+      "lon": -71.18408557611131,
+      "matchedAddress": "Washington Street & Centre Street",
+      "method": "official-intersection-reference",
+      "exact": true,
+      "scope": "project"
     }
-  ],
-  "unresolved": []
+  ]
 }

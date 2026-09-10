@@ -1,10 +1,18 @@
 {
-  "checkedAt": "2026-09-08T00:15:11.295Z",
-  "source": "https://gisweb.newtonma.gov/server/rest/services/Data/MapServer/12, https://gisweb.newtonma.gov/server/rest/services/Data/MapServer/13, and https://gisweb.newtonma.gov/server/rest/services/Data/MapServer/15",
+  "checkedAt": "2026-09-10T21:23:14.148Z",
+  "source": "City of Newton GIS Data MapServer",
+  "sourceUrl": "https://gisweb.newtonma.gov/server/rest/services/Data/MapServer",
+  "successful": true,
   "totalProjects": 39,
   "resolvedProjects": 39,
   "unresolvedProjects": 0,
-  "exactLocations": 18,
-  "referenceLocations": 21,
-  "failures": []
+  "exactLocations": 28,
+  "referenceLocations": 11,
+  "methods": {
+    "official-address-point": 26,
+    "official-street-centerline-reference": 6,
+    "official-facility-reference": 4,
+    "official-citywide-reference": 1,
+    "official-intersection-reference": 2
+  }
 }
