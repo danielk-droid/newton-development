@@ -2,7 +2,11 @@ import Link from "next/link";
 import ProjectsClient from "./ProjectsClient";
 import { allProjects } from "../../data/project-catalog";
 
-export const metadata = { title: "Projects", description: "Browse tracked development, public-building, and transportation projects in Newton, Massachusetts." };
+export const metadata = {
+  title: "Projects",
+  description: "Browse tracked development, public-building, and transportation projects in Newton, Massachusetts.",
+  alternates: { canonical: "/projects" },
+};
 
 export default function ProjectsPage() {
   const activeProjects = allProjects.filter((project) => !["Completed", "Cancelled", "Withdrawn"].includes(project.status)).length;
