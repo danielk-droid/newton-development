@@ -201,9 +201,15 @@ async function main() {
   if (unresolved.length) throw new Error(`Official Newton GIS did not resolve ${unresolved.length} catalog projects: ${unresolved.map(project => project.id).join(", ")}`);
   const exactLocations = results.filter(result => result.exact).length;
   const referenceLocations = results.length - exactLocations;
-  const payload = { checkedAt: new Date().toISOString(), source: "City of Newton GIS Data MapServer", sourceUrl: GIS, projects: results };
+  const payload = {
+    checkedAt: new Date().toISOString(),
+    source: GIS,
+    sourceUrl: GIS,
+    sourceDescription: "City of Newton GIS Data MapServer: address points, city facilities, and street centerlines",
+    projects: results,
+  };
   await fs.writeFile(OUTPUT_PATH, `${JSON.stringify(payload, null, 2)}\n`);
-  await fs.writeFile(STATUS_PATH, `${JSON.stringify({ checkedAt: payload.checkedAt, source: payload.source, sourceUrl: payload.sourceUrl, successful: true, totalProjects: projects.length, resolvedProjects: results.length, unresolvedProjects: 0, exactLocations, referenceLocations, methods: Object.fromEntries(results.reduce((map, result) => map.set(result.method, (map.get(result.method) ?? 0) + 1), new Map())) }, null, 2)}\n`);
+  await fs.writeFile(STATUS_PATH, `${JSON.stringify({ checkedAt: payload.checkedAt, source: "City of Newton GIS Data MapServer", sourceUrl: GIS, successful: true, totalProjects: projects.length, resolvedProjects: results.length, unresolvedProjects: 0, exactLocations, referenceLocations, methods: Object.fromEntries(results.reduce((map, result) => map.set(result.method, (map.get(result.method) ?? 0) + 1), new Map())) }, null, 2)}\n`);
   console.log(`Resolved ${results.length}/${projects.length} projects.`);
   console.log(`Exact locations: ${exactLocations}. Reference locations: ${referenceLocations}.`);
 }
