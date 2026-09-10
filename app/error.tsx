@@ -1,13 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
-
 export default function GlobalError({ reset }: { error: Error & { digest?: string }; reset: () => void }) {
-  useEffect(() => {
-    // Keep the error boundary intentionally quiet in production; the page provides
-    // a recovery path without exposing internal error details to visitors.
-  }, []);
-
   return (
     <main className="min-h-[calc(100vh-68px)] px-5 py-16 sm:px-6 md:py-24">
       <div className="mx-auto max-w-2xl rounded-3xl border border-slate-200 bg-white p-8 text-center shadow-[0_1px_2px_rgba(15,23,42,0.04)] md:p-12">
