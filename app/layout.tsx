@@ -15,7 +15,6 @@ export const metadata: Metadata = {
   keywords: ["Newton Massachusetts", "Newton development", "Newton projects", "Newton MA development"],
   icons: { icon: "/icon.svg" },
   robots: { index: true, follow: true },
-  alternates: { canonical: "/" },
   openGraph: {
     type: "website",
     url: siteUrl,
