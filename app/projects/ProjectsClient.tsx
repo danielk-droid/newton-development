@@ -9,6 +9,7 @@ type ProjectFacts = { units: number | null; affordableUnits: number | null; stor
 type Project = {
   id: string;
   name: string;
+  address: string;
   description: string;
   status: string;
   type?: string;
@@ -101,7 +102,7 @@ export default function ProjectsClient({ projects }: ProjectsClientProps) {
   const filteredProjects = useMemo(() => {
     const normalizedSearch = search.trim().toLowerCase();
     return projects.filter((project) => {
-      if (normalizedSearch && ![project.name, project.description, project.village ?? "", project.status, project.type ?? ""].join(" ").toLowerCase().includes(normalizedSearch)) return false;
+      if (normalizedSearch && ![project.name, project.address, project.description, project.village ?? "", project.status, project.type ?? ""].join(" ").toLowerCase().includes(normalizedSearch)) return false;
       if (status !== "All" && project.status !== status) return false;
       if (village !== "All" && project.village !== village) return false;
       if (type !== "All" && project.type !== type) return false;
@@ -140,7 +141,7 @@ export default function ProjectsClient({ projects }: ProjectsClientProps) {
             const statusDescription = getStatusDescription(project.status);
             return (
               <article key={project.id} className={`group flex flex-col rounded-2xl border border-slate-200 border-t-4 bg-white p-6 shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition duration-200 hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-lg ${typeAccent(project.type)}`}>
-                <div className="flex flex-wrap items-center gap-2"><ProjectStatusBadge status={project.status} size="sm" />{project.type && <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-semibold text-slate-600">{typeLabel(project.type)}</span>}{project.village && project.village !== "Unknown" && <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-semibold text-slate-600">{project.village}</span>}</div>
+                <div className="flex flex-wrap items-center gap-2"><ProjectStatusBadge status={project.status} size="sm" />{project.type && <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-semibold text-slate-600">{typeLabel(project.type)}</span>}{project.village && project.village !== "Unknown" && <span className="rounded-full border border-slate-200 px-2.5 py-1 text-xs font-semibold text-slate-600">{project.village}</span>}</div>
                 <h2 className="mt-5 text-2xl font-bold leading-tight tracking-[-0.025em] text-slate-950">{project.name}</h2>
                 <p className="mt-3 line-clamp-4 leading-7 text-slate-600">{project.description}</p>
                 {statusDescription && <p className="mt-4 text-sm font-semibold text-slate-500">{statusDescription}</p>}
