@@ -1,7 +1,11 @@
 import MapClient from "./MapClient";
 import { allProjects } from "../../data/project-catalog";
 
-export const metadata = { title: "Map", description: "Explore tracked Newton development projects by location, type, and status." };
+export const metadata = {
+  title: "Map",
+  description: "Explore tracked Newton development projects by location, type, and status.",
+  alternates: { canonical: "/map" },
+};
 
 export default function MapPage() {
   return (
