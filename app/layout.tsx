@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import SiteHeader from "./components/SiteHeader";
@@ -13,23 +13,27 @@ export const metadata: Metadata = {
   description: "A public-information tracker for major development, public-building, and transportation projects in Newton, Massachusetts.",
   applicationName: "Newton Development",
   keywords: ["Newton Massachusetts", "Newton development", "Newton projects", "Newton MA development"],
-  authors: [{ name: "Newton Development" }],
-  creator: "Newton Development",
-  publisher: "Newton Development",
-  icons: { icon: "/favicon.ico" },
+  icons: { icon: "/icon.svg" },
   robots: { index: true, follow: true },
+  alternates: { canonical: "/" },
   openGraph: {
     type: "website",
+    url: siteUrl,
     title: "Newton Development",
     description: "Track development, public-building, and transportation projects across Newton, Massachusetts with links to official public records.",
     siteName: "Newton Development",
-    locale: "en_US",
   },
   twitter: {
     card: "summary",
     title: "Newton Development",
-    description: "Track development, public-building, and transportation projects across Newton, Massachusetts with links to official public records.",
+    description: "Track development, public-building, and transportation projects across Newton, Massachusetts.",
   },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#102a43",
+  width: "device-width",
+  initialScale: 1,
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
