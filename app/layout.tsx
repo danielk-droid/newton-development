@@ -5,12 +5,17 @@ import SiteHeader from "./components/SiteHeader";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://newton-development.vercel.app";
 
 export const metadata: Metadata = {
+  metadataBase: new URL(siteUrl),
   title: { default: "Newton Development", template: "%s | Newton Development" },
   description: "A public-information tracker for major development, public-building, and transportation projects in Newton, Massachusetts.",
   applicationName: "Newton Development",
   keywords: ["Newton Massachusetts", "Newton development", "Newton projects", "Newton MA development"],
+  authors: [{ name: "Newton Development" }],
+  creator: "Newton Development",
+  publisher: "Newton Development",
   icons: { icon: "/favicon.ico" },
   robots: { index: true, follow: true },
   openGraph: {
@@ -18,6 +23,12 @@ export const metadata: Metadata = {
     title: "Newton Development",
     description: "Track development, public-building, and transportation projects across Newton, Massachusetts with links to official public records.",
     siteName: "Newton Development",
+    locale: "en_US",
+  },
+  twitter: {
+    card: "summary",
+    title: "Newton Development",
+    description: "Track development, public-building, and transportation projects across Newton, Massachusetts with links to official public records.",
   },
 };
 
