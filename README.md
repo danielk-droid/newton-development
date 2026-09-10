@@ -1,36 +1,52 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Newton Development
 
-## Getting Started
+Newton Development is an independent public-information tracker for major development, public-building, and transportation projects in Newton, Massachusetts.
 
-First, run the development server:
+The site organizes public records into searchable project pages and an interactive map, with links back to official source records. Project locations are resolved from the City of Newton GIS datasets and are validated before generated data is published.
+
+## Stack
+
+- Next.js 16
+- React 19
+- TypeScript
+- Tailwind CSS
+- Leaflet for the interactive map
+- GitHub Actions for automated data refresh and quality assurance
+
+## Local development
+
+Install dependencies and start the development server:
 
 ```bash
+npm ci
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open `http://localhost:3000` in a browser.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Quality checks
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+The repository includes automated checks for application structure, public-facing copy, source URLs, project IDs, event-source health, GIS coverage, coordinate provenance, and production readiness.
 
-## Learn More
+```bash
+npm run qa
+npm run validate:copy
+npm run validate:data
+npm run report:data-health
+npm run lint
+npm run build
+```
 
-To learn more about Next.js, take a look at the following resources:
+## Data refresh
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+GitHub Actions refreshes Newton project data and official GIS coordinates on a schedule and when relevant source scripts/data change. The workflow refuses to publish incomplete GIS coverage or invalid project locations. Event-source availability is handled separately so an unavailable event source does not silently invalidate otherwise verified project and GIS data.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+See [`docs/data-methodology.md`](docs/data-methodology.md) for the data and verification approach.
 
-## Deploy on Vercel
+## Deployment
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+The application is designed for deployment on a standard Next.js host such as Vercel. Set `NEXT_PUBLIC_SITE_URL` to the final public site URL when deploying so generated metadata, robots instructions, and the sitemap use the correct canonical origin.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Project status
+
+The application is maintained as a production-oriented public-information project. Automated checks are required to pass before the site is considered ready for public release.
