@@ -2,12 +2,7 @@ import { readFile } from "node:fs/promises";
 
 const source = await readFile("data/project-highlights.ts", "utf8");
 
-const requiredFields = ["label", "value", "sourceUrl"];
-const objectBlocks = [...source.matchAll(/\{\s*label:\s*"([^"]+)"\s*,\s*value:\s*"([^"]+)"\s*,\s*sourceUrl:\s*"([^"]+)"\s*\}/g)].map((match) => ({
-  label: match[1],
-  value: match[2],
-  sourceUrl: match[3],
-}));
+const objectBlocks = [...source.matchAll(/\{[^{}]*\}/g)].map((match) => match[0]);
 
 if (objectBlocks.length === 0) {
   throw new Error("No project highlights were found.");
@@ -15,25 +10,33 @@ if (objectBlocks.length === 0) {
 
 const sourceUrls = new Set();
 
-for (const [index, highlight] of objectBlocks.entries()) {
-  for (const field of requiredFields) {
-    if (!highlight[field]?.trim()) {
-      throw new Error(`Highlight ${index + 1} is missing ${field}.`);
-    }
+for (const [index, block] of objectBlocks.entries()) {
+  const label = block.match(/\blabel:\s*"([^"]*)"/)?.[1];
+  const value = block.match(/\bvalue:\s*"([^"]*)"/)?.[1];
+  const sourceUrl = block.match(/\bsourceUrl:\s*"([^"]*)"/)?.[1];
+
+  if (!label?.trim()) {
+    throw new Error(`Highlight ${index + 1} is missing label.`);
+  }
+  if (!value?.trim()) {
+    throw new Error(`Highlight ${index + 1} is missing value.`);
+  }
+  if (!sourceUrl?.trim()) {
+    throw new Error(`Highlight ${index + 1} is missing source URL.`);
   }
 
   let parsedUrl;
   try {
-    parsedUrl = new URL(highlight.sourceUrl);
+    parsedUrl = new URL(sourceUrl);
   } catch {
-    throw new Error(`Highlight ${index + 1} has an invalid source URL.`);
+    throw new Error(`Highlight ${index + 1} has an invalid source URL: ${sourceUrl}`);
   }
 
   if (parsedUrl.protocol !== "https:") {
-    throw new Error(`Highlight ${index + 1} source URL must use HTTPS.`);
+    throw new Error(`Highlight ${index + 1} source URL must use HTTPS: ${sourceUrl}`);
   }
 
-  sourceUrls.add(highlight.sourceUrl);
+  sourceUrls.add(sourceUrl);
 }
 
 console.log(`Validated ${objectBlocks.length} verified project highlights across ${sourceUrls.size} source pages.`);
