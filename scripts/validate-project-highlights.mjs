@@ -2,7 +2,12 @@ import { readFile } from "node:fs/promises";
 
 const source = await readFile("data/project-highlights.ts", "utf8");
 
-const objectBlocks = [...source.matchAll(/\{[^{}]*\}/g)].map((match) => match[0]);
+// Only inspect object literals that actually represent highlights. The file also
+// contains the TypeScript type declaration, which is an object-shaped block but
+// is not a highlight and therefore must not be validated as one.
+const objectBlocks = [...source.matchAll(/\{[^{}]*\}/g)]
+  .map((match) => match[0])
+  .filter((block) => /\bsourceUrl\s*:/.test(block));
 
 if (objectBlocks.length === 0) {
   throw new Error("No project highlights were found.");
@@ -33,7 +38,7 @@ for (const [index, block] of objectBlocks.entries()) {
   }
 
   if (parsedUrl.protocol !== "https:") {
-    throw new Error(`Highlight ${index + 1} source URL must use HTTPS: ${sourceUrl}`);
+    throw new Error(`Highlight ${index + 1} has an invalid source URL: ${sourceUrl}`);
   }
 
   sourceUrls.add(sourceUrl);
