@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 export default function GlobalError({ reset }: { error: Error & { digest?: string }; reset: () => void }) {
   return (
     <main className="min-h-[calc(100vh-68px)] px-5 py-16 sm:px-6 md:py-24">
@@ -11,9 +13,9 @@ export default function GlobalError({ reset }: { error: Error & { digest?: strin
           <button type="button" onClick={() => reset()} className="inline-flex min-h-11 items-center justify-center rounded-xl bg-[var(--brand)] px-5 py-3 text-sm font-bold text-white transition hover:bg-[var(--brand-strong)]">
             Try again
           </button>
-          <a href="/projects" className="inline-flex min-h-11 items-center justify-center rounded-xl border border-slate-300 bg-white px-5 py-3 text-sm font-bold text-slate-900 transition hover:bg-slate-50">
+          <Link href="/projects" className="inline-flex min-h-11 items-center justify-center rounded-xl border border-slate-300 bg-white px-5 py-3 text-sm font-bold text-slate-900 transition hover:bg-slate-50">
             Browse projects
-          </a>
+          </Link>
         </div>
       </div>
     </main>
