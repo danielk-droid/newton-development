@@ -2,31 +2,32 @@ import { readFile } from "node:fs/promises";
 
 const source = await readFile("data/project-highlights.ts", "utf8");
 
-// Only inspect object literals that actually represent highlights. The file also
-// contains the TypeScript type declaration, which is an object-shaped block but
-// is not a highlight and therefore must not be validated as one.
-const objectBlocks = [...source.matchAll(/\{[^{}]*\}/g)]
-  .map((match) => match[0])
-  .filter((block) => /\bsourceUrl\s*:/.test(block));
+// Match only complete highlight object literals. This intentionally ignores the
+// TypeScript type declaration and the outer projectHighlights object.
+const highlights = [...source.matchAll(
+  /\{\s*label:\s*"([^"]*)",\s*value:\s*"([^"]*)",\s*sourceUrl:\s*"([^"]*)"\s*\}/g,
+)].map((match) => ({
+  label: match[1],
+  value: match[2],
+  sourceUrl: match[3],
+}));
 
-if (objectBlocks.length === 0) {
+if (highlights.length === 0) {
   throw new Error("No project highlights were found.");
 }
 
 const sourceUrls = new Set();
 
-for (const [index, block] of objectBlocks.entries()) {
-  const label = block.match(/\blabel:\s*"([^"]*)"/)?.[1];
-  const value = block.match(/\bvalue:\s*"([^"]*)"/)?.[1];
-  const sourceUrl = block.match(/\bsourceUrl:\s*"([^"]*)"/)?.[1];
+for (const [index, highlight] of highlights.entries()) {
+  const { label, value, sourceUrl } = highlight;
 
-  if (!label?.trim()) {
+  if (!label.trim()) {
     throw new Error(`Highlight ${index + 1} is missing label.`);
   }
-  if (!value?.trim()) {
+  if (!value.trim()) {
     throw new Error(`Highlight ${index + 1} is missing value.`);
   }
-  if (!sourceUrl?.trim()) {
+  if (!sourceUrl.trim()) {
     throw new Error(`Highlight ${index + 1} is missing source URL.`);
   }
 
@@ -44,4 +45,4 @@ for (const [index, block] of objectBlocks.entries()) {
   sourceUrls.add(sourceUrl);
 }
 
-console.log(`Validated ${objectBlocks.length} verified project highlights across ${sourceUrls.size} source pages.`);
+console.log(`Validated ${highlights.length} verified project highlights across ${sourceUrls.size} source pages.`);
