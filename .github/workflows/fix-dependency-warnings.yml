@@ -23,14 +23,14 @@ jobs:
           cache: npm
 
       - name: Upgrade ESLint to supported major
-        run: npm install --save-dev eslint@^10
+        run: npm install --save-dev eslint@^10 --legacy-peer-deps
 
       - name: Approve the reviewed native resolver install script
         run: npm approve-scripts unrs-resolver@1.12.2
 
       - name: Verify dependency installation and project checks
         run: |
-          npm ci
+          npm ci --legacy-peer-deps
           npm run qa
           npm run validate:copy
           npm run validate:data
