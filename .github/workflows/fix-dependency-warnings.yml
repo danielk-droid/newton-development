@@ -1,8 +1,8 @@
 name: One-Time Dependency Warning Fix
 
 on:
-  push:
-    branches: [automation/fix-vercel-npm-warnings]
+  pull_request:
+    branches: [main]
 
 permissions:
   contents: write
@@ -38,12 +38,11 @@ jobs:
           npm run lint
           npm run build
 
-      - name: Remove one-time workflow and commit dependency fix
+      - name: Commit dependency fix back to branch
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git rm .github/workflows/fix-dependency-warnings.yml
           git add package.json package-lock.json
           git diff --cached --check
           git commit -m "Fix npm dependency warnings"
-          git push origin HEAD:automation/fix-vercel-npm-warnings
+          git push origin HEAD:${{ github.head_ref }}
