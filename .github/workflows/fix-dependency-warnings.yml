@@ -1,0 +1,49 @@
+name: One-Time Dependency Warning Fix
+
+on:
+  push:
+    branches: [automation/fix-vercel-npm-warnings]
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Upgrade ESLint to supported major
+        run: npm install --save-dev eslint@^10
+
+      - name: Approve the reviewed native resolver install script
+        run: npm approve-scripts unrs-resolver@1.12.2
+
+      - name: Verify dependency installation and project checks
+        run: |
+          npm ci
+          npm run qa
+          npm run validate:copy
+          npm run validate:data
+          npm run report:data-health
+          npm run lint
+          npm run build
+
+      - name: Remove one-time workflow and commit dependency fix
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/fix-dependency-warnings.yml
+          git add package.json package-lock.json
+          git diff --cached --check
+          git commit -m "Fix npm dependency warnings"
+          git push origin HEAD:automation/fix-vercel-npm-warnings
